@@ -24,42 +24,25 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         tts = TextToSpeech(this) { status ->
-            if (status == TextToSpeech.SUCCESS) {
-                ttsReady = true
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    val attrs = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                    tts?.setAudioAttributes(attrs)
-                }
-                val res = tts?.setLanguage(Locale("hi", "IN"))
-                if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+            runOnUiThread {
+                if (status == TextToSpeech.SUCCESS) {
+                    ttsReady = true
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        val attrs = AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build()
+                        tts?.setAudioAttributes(attrs)
+                    }
                     tts?.language = Locale.getDefault()
-                }
-                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
-                    override fun onStart(utteranceId: String?) {
-                        runOnUiThread {
-                            webView.evaluateJavascript("if(window.__onNativeTtsStart)window.__onNativeTtsStart();", null)
-                        }
-                    }
-
-                    override fun onDone(utteranceId: String?) {
-                        runOnUiThread {
-                            webView.evaluateJavascript("if(window.__onNativeTtsDone)window.__onNativeTtsDone();", null)
-                        }
-                    }
-
-                    @Deprecated("Deprecated in Java")
-                    override fun onError(utteranceId: String?) {
-                        runOnUiThread {
-                            webView.evaluateJavascript("if(window.__onNativeTtsDone)window.__onNativeTtsDone();", null)
-                        }
-                    }
-                })
-            } else {
-                runOnUiThread {
-                    Toast.makeText(this, "Android TTS इंजन शुरू नहीं हो सका", Toast.LENGTH_SHORT).show()
+                    tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                        override fun onStart(utteranceId: String?) {}
+                        override fun onDone(utteranceId: String?) {}
+                        @Deprecated("Deprecated in Java")
+                        override fun onError(utteranceId: String?) {}
+                    })
+                } else {
+                    Toast.makeText(this, "TTS Init Failed: $status", Toast.LENGTH_LONG).show()
                 }
             }
         }
@@ -80,27 +63,23 @@ class MainActivity : AppCompatActivity() {
 
     inner class AndroidTtsBridge {
         @JavascriptInterface
-        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
+        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "en-US") {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
             runOnUiThread {
                 val engine = tts
                 if (engine != null && ttsReady) {
-                    val parts = lang.split("-", "_")
-                    val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
-                    val r = engine.setLanguage(loc)
-                    if (r == TextToSpeech.LANG_MISSING_DATA || r == TextToSpeech.LANG_NOT_SUPPORTED) {
-                        engine.language = Locale.getDefault()
-                    }
-                    engine.setSpeechRate(if (rate > 0.1f) rate else 1.0f)
-                    engine.setPitch(if (pitch > 0.1f) pitch else 1.0f)
-                    val uttId = "swarai_" + System.currentTimeMillis()
-                    val speakRes = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, uttId)
-                    if (speakRes == TextToSpeech.ERROR) {
-                        Toast.makeText(this@MainActivity, "TTS बोलने में त्रुटि आई", Toast.LENGTH_SHORT).show()
+                    val r = if (rate > 0.2f && rate <= 2.5f) rate else 1.0f
+                    val p = if (pitch > 0.3f && pitch <= 2.0f) pitch else 1.0f
+                    engine.setSpeechRate(r)
+                    engine.setPitch(p)
+                    Toast.makeText(this@MainActivity, "TTS Speak: $clean", Toast.LENGTH_SHORT).show()
+                    val res = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    if (res == TextToSpeech.ERROR) {
+                        Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
                     }
                 } else {
-                    Toast.makeText(this@MainActivity, "TTS अभी तैयार हो रहा है, दोबारा दबाएं", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
                 }
             }
         }
