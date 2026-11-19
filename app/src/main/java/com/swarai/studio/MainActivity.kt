@@ -290,6 +290,15 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
                         }
+                    }
+                }
+                runOnUiThread {
+                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                        }
+                    } else if (tokensFile == null || !tokensFile.exists()) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                        }
                     } else {
                         Thread {
                             try {
