@@ -28,8 +28,8 @@ jobs:
           gradle assembleDebug --no-daemon 2>&1 | tee gradle_out.log
           EXIT_CODE=${PIPESTATUS[0]}
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "=== LAST 45 LOG LINES ==="
-            tail -n 45 gradle_out.log
+            echo "=== TOP 75 LOG LINES ==="
+            head -n 75 gradle_out.log
             exit "$EXIT_CODE"
           fi
 
