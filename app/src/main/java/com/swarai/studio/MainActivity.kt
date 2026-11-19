@@ -260,6 +260,22 @@ class MainActivity : AppCompatActivity() {
         fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
+        // SWARAI_ONNX_SPEAK_HOOK
+        val activeOnnx = selectedOnnxPath
+        if (!activeOnnx.isNullOrBlank()) {
+            val onnxFile = File(activeOnnx)
+            val modelDir = onnxFile.parentFile
+            val tokensFile = if (modelDir != null) File(modelDir, "tokens.txt") else null
+            if (!onnxFile.exists()) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                }
+            } else if (tokensFile == null || !tokensFile.exists()) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
             runOnUiThread {
                 val engine = tts
                 if (engine != null && ttsReady) {
