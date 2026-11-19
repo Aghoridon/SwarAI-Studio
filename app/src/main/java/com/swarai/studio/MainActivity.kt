@@ -6,18 +6,22 @@ import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
+import android.speech.tts.Voice
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var tts: TextToSpeech? = null
     private var ttsReady = false
+    private var selectedVoiceName: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -34,13 +38,14 @@ class MainActivity : AppCompatActivity() {
                             .build()
                         tts?.setAudioAttributes(attrs)
                     }
-                    tts?.language = Locale.getDefault()
+                    tts?.language = Locale("hi", "IN")
                     tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
                         override fun onStart(utteranceId: String?) {}
                         override fun onDone(utteranceId: String?) {}
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String?) {}
                     })
+                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();", null)
                 } else {
                     Toast.makeText(this, "TTS Init Failed: $status", Toast.LENGTH_LONG).show()
                 }
@@ -52,7 +57,12 @@ class MainActivity : AppCompatActivity() {
             settings.domStorageEnabled = true
             settings.allowFileAccess = true
             settings.mediaPlaybackRequiresUserGesture = false
-            webViewClient = WebViewClient()
+            webViewClient = object : WebViewClient() {
+                override fun onPageFinished(view: WebView?, url: String?) {
+                    super.onPageFinished(view, url)
+                    view?.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();", null)
+                }
+            }
             webChromeClient = WebChromeClient()
             addJavascriptInterface(AndroidTtsBridge(), "AndroidTTS")
             loadUrl("file:///android_asset/index.html")
@@ -61,19 +71,129 @@ class MainActivity : AppCompatActivity() {
         setContentView(webView)
     }
 
+    private fun pickMaleVoice(engine: TextToSpeech, langPrefix: String): Voice? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
+        val voices = engine.voices?.filter { !it.isNetworkConnectionRequired } ?: return null
+        val candidates = voices.filter { it.locale.language.equals(langPrefix, ignoreCase = true) }
+            .ifEmpty { voices }
+
+        return candidates.firstOrNull { v ->
+            val n = v.name.lowercase(Locale.ROOT)
+            n.contains("male") && !n.contains("female")
+        } ?: candidates.firstOrNull { v ->
+            val n = v.name.lowercase(Locale.ROOT)
+            n.contains("-m-") || n.endsWith("-m") || n.contains("man") || n.contains("deep")
+        }
+    }
+
     inner class AndroidTtsBridge {
         @JavascriptInterface
-        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "en-US") {
+        fun getAvailableVoices(): String {
+            val arr = JSONArray()
+            try {
+                val engine = tts
+                if (engine != null && ttsReady && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    val voices: Set<Voice>? = engine.voices
+                    if (voices != null) {
+                        val sorted = voices.filter { !it.isNetworkConnectionRequired }
+                            .sortedWith(compareBy<Voice> {
+                                when {
+                                    it.locale.language == "hi" -> 0
+                                    it.locale.language == "en" -> 1
+                                    else -> 2
+                                }
+                            }.thenBy { it.name })
+
+                        for (v in sorted) {
+                            val obj = JSONObject()
+                            obj.put("name", v.name)
+                            val langTag = v.locale.toLanguageTag()
+                            val labelLang = when (v.locale.language) {
+                                "hi" -> "हिंदी"
+                                "en" -> "English"
+                                else -> langTag
+                            }
+                            val nLow = v.name.lowercase(Locale.ROOT)
+                            val genderHint = when {
+                                nLow.contains("female") || nLow.contains("-f-") -> " [Female]"
+                                nLow.contains("male") || nLow.contains("-m-") -> " [Male]"
+                                else -> ""
+                            }
+                            obj.put("label", "$labelLang$genderHint • ${v.name} ($langTag)")
+                            obj.put("lang", langTag)
+                            arr.put(obj)
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            return arr.toString()
+        }
+
+        @JavascriptInterface
+        fun setVoice(voiceName: String?) {
+            selectedVoiceName = voiceName
+            runOnUiThread {
+                try {
+                    val engine = tts
+                    if (engine != null && ttsReady && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !voiceName.isNullOrBlank()) {
+                        val match = engine.voices?.firstOrNull { it.name == voiceName }
+                        if (match != null) {
+                            engine.voice = match
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+
+        @JavascriptInterface
+        fun selectMaleVoice(lang: String = "hi-IN"): String {
+            var chosen = ""
+            runOnUiThread {
+                try {
+                    val engine = tts
+                    if (engine != null && ttsReady && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        val prefix = lang.split("-", "_").firstOrNull() ?: "hi"
+                        val mv = pickMaleVoice(engine, prefix)
+                        if (mv != null) {
+                            selectedVoiceName = mv.name
+                            engine.voice = mv
+                            chosen = mv.name
+                        }
+                    }
+                } catch (_: Exception) {}
+            }
+            return chosen
+        }
+
+        @JavascriptInterface
+        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
             runOnUiThread {
                 val engine = tts
                 if (engine != null && ttsReady) {
-                    val r = if (rate > 0.2f && rate <= 2.5f) rate else 1.0f
-                    val p = if (pitch > 0.3f && pitch <= 2.0f) pitch else 1.0f
+                    val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
+                    val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
                     engine.setSpeechRate(r)
                     engine.setPitch(p)
-                    Toast.makeText(this@MainActivity, "TTS Speak: $clean", Toast.LENGTH_SHORT).show()
+
+                    var appliedVoice = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
+                        val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
+                        if (match != null) {
+                            engine.voice = match
+                            appliedVoice = true
+                        }
+                    }
+                    if (!appliedVoice) {
+                        val parts = lang.split("-", "_")
+                        val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
+                        val res = engine.setLanguage(loc)
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            engine.language = Locale.getDefault()
+                        }
+                    }
+
                     val res = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
                     if (res == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()

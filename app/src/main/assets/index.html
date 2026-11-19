@@ -2989,6 +2989,125 @@
   }, true);
 })();
 </script>
+<!-- SWARAI_PRESET_VOICE_MANAGER -->
+<script>
+(function() {
+  var PRESETS = [
+    { match: ["सामान्य स्पष्ट", "Normal"], pitch: 1.00, rate: 1.00, preferMale: false },
+    { match: ["गहरा पॉडकास्ट", "Deep Male"], pitch: 0.56, rate: 0.90, preferMale: true },
+    { match: ["मधुर स्त्री टोन", "Soft High"], pitch: 1.35, rate: 1.02, preferMale: false },
+    { match: ["धीमी कहानी वाचक", "Story"], pitch: 0.92, rate: 0.85, preferMale: false },
+    { match: ["तेज़ समाचार", "News Anchor"], pitch: 1.05, rate: 1.22, preferMale: false },
+    { match: ["रहस्यमयी भारी", "Mystic"], pitch: 0.55, rate: 0.82, preferMale: true }
+  ];
+
+  function applyValuesToSliders(pitchVal, rateVal) {
+    var ranges = Array.prototype.slice.call(document.querySelectorAll('input[type="range"]'));
+    if (ranges.length >= 1) {
+      var pEl = ranges[0];
+      pEl.min = "0.50";
+      pEl.max = "1.80";
+      pEl.step = "0.01";
+      pEl.value = String(pitchVal);
+      pEl.dispatchEvent(new Event("input", { bubbles: true }));
+      pEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    if (ranges.length >= 2) {
+      var rEl = ranges[1];
+      rEl.min = "0.50";
+      rEl.max = "2.00";
+      rEl.step = "0.01";
+      rEl.value = String(rateVal);
+      rEl.dispatchEvent(new Event("input", { bubbles: true }));
+      rEl.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    var n;
+    var updatedPitchLabel = false;
+    while ((n = walker.nextNode())) {
+      var raw = (n.nodeValue || "").trim();
+      if (/^[0-2]\.[0-9]{1,2}x?$/.test(raw)) {
+        if (!updatedPitchLabel) {
+          n.nodeValue = pitchVal.toFixed(2);
+          updatedPitchLabel = true;
+        } else {
+          n.nodeValue = rateVal.toFixed(2) + "x";
+          break;
+        }
+      }
+    }
+  }
+
+  function populateVoiceDropdown() {
+    var sel = document.querySelector("select");
+    if (!sel || !window.AndroidTTS || typeof window.AndroidTTS.getAvailableVoices !== "function") return;
+    try {
+      var raw = window.AndroidTTS.getAvailableVoices();
+      var list = JSON.parse(raw || "[]");
+      if (!Array.isArray(list) || list.length === 0) return;
+      var prevVal = sel.value;
+      sel.innerHTML = "";
+      list.forEach(function(item, i) {
+        var opt = document.createElement("option");
+        opt.value = item.name;
+        opt.textContent = item.label || item.name;
+        if (i === 0) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      if (prevVal && Array.prototype.some.call(sel.options, function(o) { return o.value === prevVal; })) {
+        sel.value = prevVal;
+      }
+      if (sel.value && typeof window.AndroidTTS.setVoice === "function") {
+        window.AndroidTTS.setVoice(sel.value);
+      }
+      if (!sel.__swaraiBound) {
+        sel.__swaraiBound = true;
+        sel.addEventListener("change", function() {
+          if (typeof window.AndroidTTS.setVoice === "function") {
+            window.AndroidTTS.setVoice(sel.value);
+          }
+        });
+      }
+    } catch (_) {}
+  }
+
+  window.__swaraiRefreshVoices = populateVoiceDropdown;
+
+  document.addEventListener("click", function(e) {
+    var btn = e.target && e.target.closest ? e.target.closest("button") : null;
+    if (!btn) return;
+    var txt = (btn.innerText || btn.textContent || "").trim();
+    if (txt.indexOf("रिफ्रेश") !== -1) {
+      setTimeout(populateVoiceDropdown, 100);
+      return;
+    }
+    for (var i = 0; i < PRESETS.length; i++) {
+      var p = PRESETS[i];
+      var hit = p.match.some(function(k) { return txt.indexOf(k) !== -1; });
+      if (hit) {
+        applyValuesToSliders(p.pitch, p.rate);
+        if (p.preferMale && window.AndroidTTS && typeof window.AndroidTTS.selectMaleVoice === "function") {
+          var chosen = window.AndroidTTS.selectMaleVoice("hi-IN");
+          var sel = document.querySelector("select");
+          if (chosen && sel) {
+            for (var j = 0; j < sel.options.length; j++) {
+              if (sel.options[j].value === chosen) {
+                sel.selectedIndex = j;
+                break;
+              }
+            }
+          }
+        }
+        break;
+      }
+    }
+  }, true);
+
+  setTimeout(populateVoiceDropdown, 400);
+  setTimeout(populateVoiceDropdown, 1500);
+})();
+</script>
+</body>
 </body>
 </body>
 </html>
