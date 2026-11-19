@@ -295,7 +295,7 @@ class MainActivity : AppCompatActivity() {
                         val speedVal = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
                         Thread {
                             var playedOnnx = false
-                            var ttsInstance: OfflineTts? = null
+                            var ttsObj: OfflineTts? = null
                             try {
                                 val vitsCfg = OfflineTtsVitsModelConfig().apply {
                                     model = onnxFile.absolutePath
@@ -312,19 +312,15 @@ class MainActivity : AppCompatActivity() {
                                     numThreads = 2
                                     debug = false
                                 }
-                                val ttsCfg = OfflineTtsConfig().apply {
-                                    model = modelCfg
-                                }
-                                ttsInstance = OfflineTts(assets, ttsCfg)
-                                val generated = ttsInstance.generate(textToSpeak, 0, speedVal)
-                                val samples = generated.samples
-                                val sr = generated.sampleRate
+                                val ttsCfg = OfflineTtsConfig().apply { model = modelCfg }
+                                ttsObj = OfflineTts(assets, ttsCfg)
+                                val out = ttsObj.generate(textToSpeak, 0, speedVal)
+                                val samples = out.samples
+                                val sr = out.sampleRate
                                 if (samples != null && samples.isNotEmpty() && sr > 0) {
                                     val pcm = ShortArray(samples.size) { i ->
-                                        val clamped = samples[i].coerceIn(-1.0f, 1.0f)
-                                        (clamped * Short.MAX_VALUE).toInt().toShort()
+                                        (samples[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()
                                     }
-                                    val bufBytes = pcm.size * 2
                                     val track = AudioTrack.Builder()
                                         .setAudioAttributes(
                                             AudioAttributes.Builder()
@@ -339,23 +335,42 @@ class MainActivity : AppCompatActivity() {
                                                 .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                                                 .build()
                                         )
-                                        .setBufferSizeInBytes(bufBytes)
+                                        .setBufferSizeInBytes(pcm.size * 2)
                                         .setTransferMode(AudioTrack.MODE_STATIC)
                                         .build()
                                     track.write(pcm, 0, pcm.size)
                                     track.play()
                                     playedOnnx = true
                                 }
-                            } catch (err: Throwable) {
-                                val errMsg = err.message ?: err.javaClass.simpleName
+                            } catch (t: Throwable) {
+                                val m = t.message ?: t.javaClass.simpleName
                                 runOnUiThread {
-                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: $errMsg", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
                                 }
                             } finally {
-                                try { ttsInstance?.release() } catch (_: Throwable) {}
+                                try { ttsObj?.release() } catch (_: Throwable) {}
                             }
                             if (!playedOnnx) {
                                 runOnUiThread {
+                                    val eng = tts
+                                    if (eng != null && ttsReady) {
+                                        eng.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
+                                    }
+                                }
+                            }
+                        }.start()
+                        return
+                    } else if (!onnxFile.exists()) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                runOnUiThread {
                                     val engine = tts
                                     if (engine != null && ttsReady) {
                                         engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
@@ -407,7 +422,6 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
                 }
             }
-        }
 
         
 
@@ -417,10 +431,7 @@ class MainActivity : AppCompatActivity() {
                 try {
                     tts?.stop()
                 } catch (_: Exception) {}
-            }
 
-                    }
-                    }
     override fun onDestroy() {
         try {
             tts?.stop()
