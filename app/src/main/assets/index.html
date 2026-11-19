@@ -3123,6 +3123,109 @@
   setTimeout(populateVoiceDropdown, 1500);
 })();
 </script>
+<!-- SWARAI_ONNX_LOCAL_LOADER -->
+<script>
+(function() {
+  function mountOnnxPanel() {
+    if (document.getElementById("swarai-onnx-card")) return;
+    var selects = document.querySelectorAll("select");
+    var anchor = selects.length > 0 ? selects[0].parentElement : document.body;
+    if (!anchor) return;
+
+    var card = document.createElement("div");
+    card.id = "swarai-onnx-card";
+    card.style.cssText = "margin:12px 0;padding:12px;border:1px solid rgba(255,255,255,0.14);border-radius:10px;background:rgba(255,255,255,0.03);";
+
+    var folderPath = "/storage/emulated/0/SwarAI/models";
+    if (window.AndroidTTS && typeof window.AndroidTTS.getModelsFolderPath === "function") {
+      try { folderPath = window.AndroidTTS.getModelsFolderPath() || folderPath; } catch (_) {}
+    }
+
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
+        '<strong style="font-size:13px;">ऑफ़लाइन .onnx मॉडल (लोकल फ़ोल्डर)</strong>' +
+        '<button type="button" id="swarai-onnx-scan-btn" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;font-size:12px;">मॉडल स्कैन करें</button>' +
+      '</div>' +
+      '<div style="font-size:11px;opacity:0.8;word-break:break-all;margin-bottom:8px;">फ़ोल्डर: ' + folderPath + '</div>' +
+      '<select id="swarai-onnx-select" style="width:100%;padding:8px;border-radius:8px;background:#141b24;color:#ffffff;border:1px solid rgba(255,255,255,0.2);margin-bottom:6px;">' +
+        '<option value="">कोई .onnx मॉडल नहीं मिला (सिस्टम TTS सक्रिय)</option>' +
+      '</select>' +
+      '<div id="swarai-onnx-status" style="font-size:11px;opacity:0.85;">तैयार: .onnx फ़ाइलें फ़ोल्डर में रखें और स्कैन करें।</div>';
+
+    if (anchor.nextSibling) {
+      anchor.parentNode.insertBefore(card, anchor.nextSibling);
+    } else {
+      anchor.parentNode.appendChild(card);
+    }
+
+    document.getElementById("swarai-onnx-scan-btn").addEventListener("click", function() {
+      refreshOnnxList(true);
+    });
+
+    document.getElementById("swarai-onnx-select").addEventListener("change", function() {
+      var val = this.value || "";
+      if (window.AndroidTTS && typeof window.AndroidTTS.selectOnnxModel === "function") {
+        window.AndroidTTS.selectOnnxModel(val);
+      }
+      var st = document.getElementById("swarai-onnx-status");
+      if (st) {
+        st.textContent = val
+          ? "चयनित मॉडल: " + val + " (रनटाइम ब्रिज के लिए तैयार)"
+          : "सिस्टम TTS मोड सक्रिय है।";
+      }
+    });
+  }
+
+  function refreshOnnxList(showToastHint) {
+    mountOnnxPanel();
+    var sel = document.getElementById("swarai-onnx-select");
+    var st = document.getElementById("swarai-onnx-status");
+    if (!sel || !window.AndroidTTS || typeof window.AndroidTTS.getLocalOnnxModels !== "function") return;
+
+    try {
+      var raw = window.AndroidTTS.getLocalOnnxModels();
+      var models = JSON.parse(raw || "[]");
+      sel.innerHTML = "";
+
+      var defOpt = document.createElement("option");
+      defOpt.value = "";
+      defOpt.textContent = models.length > 0
+        ? "— सिस्टम TTS (डिफ़ॉल्ट) या नीचे से .onnx चुनें —"
+        : "कोई .onnx मॉडल नहीं मिला (सिस्टम TTS सक्रिय)";
+      sel.appendChild(defOpt);
+
+      models.forEach(function(m) {
+        var opt = document.createElement("option");
+        opt.value = m.path;
+        var cfgNote = m.hasConfigJson ? " +json" : "";
+        opt.textContent = m.name + " (" + m.size + cfgNote + ")";
+        sel.appendChild(opt);
+      });
+
+      var current = "";
+      if (typeof window.AndroidTTS.getSelectedOnnxModel === "function") {
+        current = window.AndroidTTS.getSelectedOnnxModel() || "";
+      }
+      if (current) {
+        sel.value = current;
+      }
+
+      if (st) {
+        if (models.length === 0) {
+          st.textContent = "फ़ोल्डर में कोई .onnx फ़ाइल नहीं मिली। आप अपनी हिंदी .onnx फ़ाइल /storage/emulated/0/SwarAI/models/ में रख सकते हैं।";
+        } else if (showToastHint) {
+          st.textContent = models.length + " .onnx मॉडल मिले। सूची से मॉडल चुनें।";
+        }
+      }
+    } catch (_) {}
+  }
+
+  window.__swaraiRefreshOnnxModels = function() { refreshOnnxList(false); };
+  setTimeout(function() { refreshOnnxList(false); }, 350);
+  setTimeout(function() { refreshOnnxList(false); }, 1400);
+})();
+</script>
+</body>
 </body>
 </body>
 </body>

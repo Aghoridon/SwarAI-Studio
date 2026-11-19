@@ -1,9 +1,12 @@
 package com.swarai.studio
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.media.AudioAttributes
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -13,8 +16,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
@@ -22,10 +28,40 @@ class MainActivity : AppCompatActivity() {
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var selectedVoiceName: String? = null
+    private var selectedOnnxPath: String? = null
+
+    private fun getModelsDir(): File {
+        val base = Environment.getExternalStorageDirectory()
+        return File(base, "SwarAI/models")
+    }
+
+    private fun ensureStoragePermission() {
+        val needed = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_MEDIA_AUDIO)
+            }
+        } else {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+        if (needed.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, needed.toTypedArray(), 204)
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ensureStoragePermission()
+
+        try {
+            val dir = getModelsDir()
+            if (!dir.exists()) {
+                dir.mkdirs()
+            }
+        } catch (_: Exception) {}
 
         tts = TextToSpeech(this) { status ->
             runOnUiThread {
@@ -45,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String?) {}
                     })
-                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();", null)
+                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();", null)
                 } else {
                     Toast.makeText(this, "TTS Init Failed: $status", Toast.LENGTH_LONG).show()
                 }
@@ -60,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    view?.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();", null)
+                    view?.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();", null)
                 }
             }
             webChromeClient = WebChromeClient()
@@ -87,6 +123,61 @@ class MainActivity : AppCompatActivity() {
     }
 
     inner class AndroidTtsBridge {
+        @JavascriptInterface
+        fun getModelsFolderPath(): String {
+            return try {
+                getModelsDir().absolutePath
+            } catch (_: Exception) {
+                "/storage/emulated/0/SwarAI/models"
+            }
+        }
+
+        @JavascriptInterface
+        fun getLocalOnnxModels(): String {
+            val arr = JSONArray()
+            try {
+                val dir = getModelsDir()
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                }
+                val files = dir.listFiles()
+                if (files != null) {
+                    val onnxFiles = files.filter { it.isFile && it.name.lowercase(Locale.ROOT).endsWith(".onnx") }
+                        .sortedBy { it.name.lowercase(Locale.ROOT) }
+                    for (f in onnxFiles) {
+                        val sizeMb = String.format(Locale.US, "%.1f MB", f.length() / (1024.0 * 1024.0))
+                        val hasJson = File(f.absolutePath + ".json").exists()
+                        val obj = JSONObject()
+                        obj.put("name", f.name)
+                        obj.put("path", f.absolutePath)
+                        obj.put("size", sizeMb)
+                        obj.put("hasConfigJson", hasJson)
+                        arr.put(obj)
+                    }
+                }
+            } catch (_: Exception) {}
+            return arr.toString()
+        }
+
+        @JavascriptInterface
+        fun selectOnnxModel(path: String?): String {
+            selectedOnnxPath = if (path.isNullOrBlank()) null else path.trim()
+            runOnUiThread {
+                if (selectedOnnxPath != null) {
+                    val f = File(selectedOnnxPath!!)
+                    Toast.makeText(this@MainActivity, "मॉडल चुना गया: ${f.name}", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "सिस्टम TTS मोड चुना गया", Toast.LENGTH_SHORT).show()
+                }
+            }
+            return selectedOnnxPath ?: ""
+        }
+
+        @JavascriptInterface
+        fun getSelectedOnnxModel(): String {
+            return selectedOnnxPath ?: ""
+        }
+
         @JavascriptInterface
         fun getAvailableVoices(): String {
             val arr = JSONArray()
