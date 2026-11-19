@@ -3151,7 +3151,7 @@
 
       var card = document.createElement("div");
       card.id = "swarai-onnx-card";
-      card.style.cssText = "display:block !important;visibility:visible !important;opacity:1 !important;width:100%;box-sizing:border-box;margin:12px 0;padding:12px;border:1px solid rgba(52,211,153,0.55);border-radius:10px;background:rgba(16,185,129,0.10);color:#e5e7eb;";
+      card.style.cssText = "position:relative;z-index:20;pointer-events:auto !important;display:block !important;visibility:visible !important;opacity:1 !important;width:100%;box-sizing:border-box;margin:12px 0;padding:12px;border:1px solid rgba(52,211,153,0.55);border-radius:10px;background:rgba(16,185,129,0.10);color:#e5e7eb;";
 
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
@@ -3172,9 +3172,15 @@
 
       var scanBtn = document.getElementById("swarai-onnx-scan-btn");
       if (scanBtn) {
-        scanBtn.addEventListener("click", function() {
+        scanBtn.style.pointerEvents = "auto";
+        scanBtn.style.position = "relative";
+        scanBtn.style.zIndex = "30";
+        var onScanTap = function(ev) {
+          if (ev && ev.preventDefault) ev.preventDefault();
           refreshOnnxList(true);
-        });
+        };
+        scanBtn.addEventListener("click", onScanTap);
+        scanBtn.addEventListener("touchend", onScanTap, { passive: false });
       }
 
       var onnxSel = document.getElementById("swarai-onnx-select");
