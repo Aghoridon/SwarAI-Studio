@@ -3127,6 +3127,8 @@
 <script>
 (function() {
   function runOnnxScanNow() {
+    window.__swaraiScanCount = (window.__swaraiScanCount || 0) + 1;
+    var scanTag = "[Scan #" + window.__swaraiScanCount + "] ";
     var st = document.getElementById("swarai-onnx-status");
     var sel = document.getElementById("swarai-onnx-select");
     if (st) st.textContent = "Scanning /storage/emulated/0/SwarAI/models ...";
@@ -3153,15 +3155,15 @@
           });
         }
         if (st) {
-          st.textContent = models.length > 0
+          st.textContent = scanTag + (models.length > 0
             ? (models.length + " मॉडल मिले। सूची से चुनें।")
-            : "कोई .onnx मॉडल नहीं मिला। फ़ाइल /storage/emulated/0/SwarAI/models/ में रखें।";
+            : "कोई .onnx मॉडल नहीं मिला। फ़ाइल /storage/emulated/0/SwarAI/models/ में रखें।");
         }
       } else if (st) {
-        st.textContent = "AndroidTTS इंटरफ़ेस उपलब्ध नहीं है।";
+        st.textContent = scanTag + "AndroidTTS इंटरफ़ेस उपलब्ध नहीं है।";
       }
     } catch (err) {
-      if (st) st.textContent = "स्कैन एरर: " + (err && err.message ? err.message : err);
+      if (st) st.textContent = scanTag + "स्कैन एरर: " + (err && err.message ? err.message : err);
     }
   }
 
