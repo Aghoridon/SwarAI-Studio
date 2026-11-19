@@ -407,7 +407,6 @@ class MainActivity : AppCompatActivity() {
                     tts?.stop()
                 } catch (_: Exception) {}
             }
-        }
 
     override fun onDestroy() {
         try {
@@ -418,4 +417,3 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-                }
