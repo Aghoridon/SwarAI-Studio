@@ -371,6 +371,32 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 runOnUiThread {
+                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
+                                }
+                            } finally {
+                                try { ttsObj?.release() } catch (_: Throwable) {}
+                            }
+                            if (!playedOnnx) {
+                                runOnUiThread {
+                                    val eng = tts
+                                    if (eng != null && ttsReady) {
+                                        eng.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
+                                    }
+                                }
+                            }
+                        }.start()
+                        return
+                    } else if (!onnxFile.exists()) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                runOnUiThread {
                                     val engine = tts
                                     if (engine != null && ttsReady) {
                                         engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
@@ -412,16 +438,12 @@ class MainActivity : AppCompatActivity() {
                         if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
                             engine.language = Locale.getDefault()
                         }
-                    }
 
                     val res = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
                     if (res == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
-                    }
                 } else {
                     Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
-                }
-            }
 
         
 
