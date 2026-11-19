@@ -363,8 +363,6 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                }
                 runOnUiThread {
                     val engine = tts
                 if (engine != null && ttsReady) {
@@ -400,7 +398,9 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        @JavascriptInterface
+        
+
+@JavascriptInterface
         fun stop() {
             runOnUiThread {
                 try {
@@ -416,4 +416,4 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
-
+}}
