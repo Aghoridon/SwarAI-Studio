@@ -401,12 +401,12 @@ class MainActivity : AppCompatActivity() {
                 } catch (_: Exception) {}
             }
 
+                    }
+                    }
     override fun onDestroy() {
         try {
             tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
         super.onDestroy()
-    }
-}
 }}
