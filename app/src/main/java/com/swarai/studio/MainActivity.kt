@@ -81,7 +81,7 @@ class MainActivity : AppCompatActivity() {
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String?) {}
                     })
-                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();", null)
+                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();var b=document.getElementById(\"swarai-onnx-scan-btn\");if(b){b.style.pointerEvents=\"auto\";b.onclick=function(e){if(e)e.preventDefault();if(typeof refreshOnnxList===\"function\")refreshOnnxList(true);else if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();};}", null)
                 } else {
                     Toast.makeText(this, "TTS Init Failed: $status", Toast.LENGTH_LONG).show()
                 }
