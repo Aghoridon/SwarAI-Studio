@@ -1,5 +1,12 @@
 package com.swarai.studio
 
+import android.media.AudioFormat
+import android.media.AudioTrack
+import com.k2fsa.sherpa.onnx.OfflineTts
+import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
+
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
@@ -282,17 +289,71 @@ class MainActivity : AppCompatActivity() {
                     val onnxFile = File(activeOnnx)
                     val modelDir = onnxFile.parentFile
                     val tokensFile = if (modelDir != null) File(modelDir, "tokens.txt") else null
-                    if (!onnxFile.exists()) {
+                    val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
+                    if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
+                        try {
+                            val vitsCfg = OfflineTtsVitsModelConfig(
+                                model = onnxFile.absolutePath,
+                                tokens = tokensFile.absolutePath,
+                                dataDir = if (espeakDir != null && espeakDir.exists()) espeakDir.absolutePath else "",
+                                noiseScale = 0.667f,
+                                noiseScaleW = 0.8f,
+                                lengthScale = 1.0f
+                            )
+                            val modelCfg = OfflineTtsModelConfig(
+                                vits = vitsCfg,
+                                numThreads = 2,
+                                debug = false
+                            )
+                            val ttsCfg = OfflineTtsConfig(model = modelCfg)
+                            val sherpaTts = OfflineTts(assetManager = null, config = ttsCfg)
+                            val spd = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
+                            val generated = sherpaTts.generate(text = clean, sid = 0, speed = spd)
+                            val samples = generated.samples
+                            val sr = generated.sampleRate
+                            sherpaTts.release()
+                            if (samples != null && samples.isNotEmpty() && sr > 0) {
+                                val pcm = ShortArray(samples.size) { i ->
+                                    val clamped = samples[i].coerceIn(-1.0f, 1.0f)
+                                    (clamped * Short.MAX_VALUE).toInt().toShort()
+                                }
+                                val bufBytes = pcm.size * 2
+                                val track = AudioTrack.Builder()
+                                    .setAudioAttributes(
+                                        AudioAttributes.Builder()
+                                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                            .build()
+                                    )
+                                    .setAudioFormat(
+                                        AudioFormat.Builder()
+                                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                            .setSampleRate(sr)
+                                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                            .build()
+                                    )
+                                    .setBufferSizeInBytes(bufBytes)
+                                    .setTransferMode(AudioTrack.MODE_STATIC)
+                                    .build()
+                                track.write(pcm, 0, pcm.size)
+                                track.play()
+                                return
+                            }
+                        } catch (_: Exception) {
+                            // Fall back to system TTS on model/runtime error
+                        }
+                    } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
                         }
-                    } else if (tokensFile == null || !tokensFile.exists()) {
+                    } else {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-                val engine = tts
+                runOnUiThread {
+                    val engine = tts
                 if (engine != null && ttsReady) {
                     val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
                     val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
@@ -343,3 +404,5 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
+
+                }
