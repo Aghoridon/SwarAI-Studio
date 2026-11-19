@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
+<script>
+(function() {
+  window.__swaraiSpeakNow = function(txt, rate, pitch, lang) {
+    var clean = String(txt || "").replace(/\[[^\]]*\]/g, " ").trim();
+    if (!clean) return;
+    var r = (typeof rate === "number" && !isNaN(rate)) ? rate : 1.0;
+    var p = (typeof pitch === "number" && !isNaN(pitch)) ? pitch : 1.0;
+    var l = lang || "hi-IN";
+    if (window.AndroidTTS && typeof window.AndroidTTS.speak === "function") {
+      window.AndroidTTS.speak(clean, r, p, l);
+    }
+  };
+  window.__swaraiStopNow = function() {
+    if (window.AndroidTTS && typeof window.AndroidTTS.stop === "function") {
+      window.AndroidTTS.stop();
+    }
+  };
+})();
+</script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>SwarAI Studio — हाइब्रिड ऑफ़लाइन + ऑनलाइन AI वॉइस स्टूडियो</title>
@@ -2931,6 +2950,43 @@
       resume: function() {}
     };
   }
+})();
+</script>
+<script>
+(function() {
+  function readText() {
+    var ta = document.querySelector("textarea");
+    return ta ? ta.value : "";
+  }
+  function readNums() {
+    var nums = [];
+    document.querySelectorAll('input[type="range"]').forEach(function(el) {
+      var v = parseFloat(el.value);
+      if (!isNaN(v)) nums.push(v);
+    });
+    return {
+      pitch: nums.length > 0 ? nums[0] : 1.0,
+      rate: nums.length > 1 ? nums[1] : 1.0
+    };
+  }
+  document.addEventListener("click", function(e) {
+    var el = e.target;
+    while (el && el !== document.body) {
+      var t = (el.innerText || el.textContent || "");
+      if (t.indexOf("ऑफ़लाइन सुनें") !== -1 || t.indexOf("ऑफलाइन सुनें") !== -1) {
+        var cfg = readNums();
+        setTimeout(function() {
+          window.__swaraiSpeakNow(readText(), cfg.rate, cfg.pitch, "hi-IN");
+        }, 120);
+        break;
+      }
+      if (t.indexOf("बंद करें") !== -1 || t.indexOf("रोकें") !== -1) {
+        window.__swaraiStopNow();
+        break;
+      }
+      el = el.parentElement;
+    }
+  }, true);
 })();
 </script>
 </body>
