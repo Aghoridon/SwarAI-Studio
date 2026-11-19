@@ -25,11 +25,11 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log
+          gradle assembleDebug --no-daemon 2>&1 | tee gradle_out.log
           EXIT_CODE=${PIPESTATUS[0]}
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "=== CAUSED BY ==="
-            grep -n -A 15 "Caused by:" gradle_out.log | head -n 30
+            echo "=== LAST 45 LOG LINES ==="
+            tail -n 45 gradle_out.log
             exit "$EXIT_CODE"
           fi
 
