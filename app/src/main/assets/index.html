@@ -2889,3 +2889,37 @@
   </script>
 </body>
 </html>
+
+<script>
+(function() {
+  if (window.__swaraiBridgeLoaded) return;
+  window.__swaraiBridgeLoaded = true;
+  if (window.AndroidTTS && typeof window.AndroidTTS.speak === "function") {
+    window.speechSynthesis = {
+      speaking: false,
+      pending: false,
+      paused: false,
+      getVoices: function() {
+        return [
+          { name: "Android Native Hindi", lang: "hi-IN", localService: true, default: true },
+          { name: "Android Native English", lang: "en-US", localService: true, default: false }
+        ];
+      },
+      speak: function(utterance) {
+        var txt = typeof utterance === "string" ? utterance : (utterance && utterance.text) || "";
+        var rate = (utterance && typeof utterance.rate === "number") ? utterance.rate : 1.0;
+        var pitch = (utterance && typeof utterance.pitch === "number") ? utterance.pitch : 1.0;
+        var lang = (utterance && utterance.lang) || "hi-IN";
+        window.AndroidTTS.speak(String(txt), rate, pitch, lang);
+      },
+      cancel: function() {
+        window.AndroidTTS.stop();
+      },
+      pause: function() {
+        window.AndroidTTS.stop();
+      },
+      resume: function() {}
+    };
+  }
+})();
+</script>
