@@ -3174,15 +3174,15 @@
       if (scanBtn) {
         scanBtn.style.pointerEvents = "auto";
         scanBtn.style.position = "relative";
-        scanBtn.style.zIndex = "30";
-        var onScanTap = function(ev) {
+        scanBtn.style.zIndex = "999";
+        var triggerScan = function(ev) {
           if (ev && ev.preventDefault) ev.preventDefault();
           refreshOnnxList(true);
         };
-        scanBtn.addEventListener("click", onScanTap);
-        scanBtn.addEventListener("touchend", onScanTap, { passive: false });
+        scanBtn.onclick = triggerScan;
+        scanBtn.addEventListener("click", triggerScan, true);
+        scanBtn.addEventListener("touchend", triggerScan, { passive: false });
       }
-
       var onnxSel = document.getElementById("swarai-onnx-select");
       if (onnxSel) {
         onnxSel.addEventListener("change", function() {
