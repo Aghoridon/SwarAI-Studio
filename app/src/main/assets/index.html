@@ -3192,7 +3192,7 @@
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
           '<strong style="font-size:13px;color:#a7f3d0;">ऑफ़लाइन .onnx मॉडल (लोकल फ़ोल्डर)</strong>' +
-          '<button type="button" id="swarai-onnx-scan-btn" style="position:relative;z-index:60;pointer-events:auto;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:#1f2937;color:#ffffff;font-size:12px;">मॉडल स्कैन करें</button>' +
+          '<button type="button" id="swarai-onnx-scan-btn" style="position:relative;z-index:60;pointer-events:auto;padding:6px 12px;border-radius:6px;border:1px solid #f472b6;background:#ec4899;color:#ffffff;font-size:12px;font-weight:600;">मॉडल स्कैन करें</button>' +
         '</div>' +
         '<div style="font-size:11px;opacity:0.85;word-break:break-all;margin-bottom:8px;">फ़ोल्डर: ' + folderPath + '</div>' +
         '<select id="swarai-onnx-select" style="width:100%;padding:8px;border-radius:8px;background:#111827;color:#ffffff;border:1px solid rgba(255,255,255,0.25);margin-bottom:6px;">' +
@@ -3203,6 +3203,13 @@
       mainEl.appendChild(card);
 
       var scanBtn = document.getElementById("swarai-onnx-scan-btn");
+    if (scanBtn) {
+      scanBtn.style.background = "#ec4899";
+      scanBtn.style.backgroundColor = "#ec4899";
+      scanBtn.style.borderColor = "#f472b6";
+      scanBtn.style.color = "#ffffff";
+      scanBtn.style.fontWeight = "600";
+    }
       if (scanBtn) {
         var handleTap = function(e) {
           if (e) {
