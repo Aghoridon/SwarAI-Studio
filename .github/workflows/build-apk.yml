@@ -21,11 +21,12 @@ jobs:
 
       - name: Build Debug APK
         run: |
+          gradle --version
           gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log
           EXIT_CODE=${PIPESTATUS[0]}
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "=== EXACT ERROR LINES ==="
-            grep -n -C 6 "DependencyHandler.module\|e: \|FAILURE:\|Could not\|Execution failed" gradle_out.log | tail -n 35
+            echo "=== ROOT CAUSE ==="
+            grep -n -A 15 "FAILURE:" gradle_out.log | head -n 35
             exit "$EXIT_CODE"
           fi
 
