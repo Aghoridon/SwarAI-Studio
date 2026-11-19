@@ -292,23 +292,27 @@ class MainActivity : AppCompatActivity() {
                     val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
                     if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
                         try {
-                            val vitsCfg = OfflineTtsVitsModelConfig(
-                                model = onnxFile.absolutePath,
-                                tokens = tokensFile.absolutePath,
-                                dataDir = if (espeakDir != null && espeakDir.exists()) espeakDir.absolutePath else "",
-                                noiseScale = 0.667f,
-                                noiseScaleW = 0.8f,
+                            val vitsCfg = OfflineTtsVitsModelConfig().apply {
+                                model = onnxFile.absolutePath
+                                tokens = tokensFile.absolutePath
+                                if (espeakDir != null && espeakDir.exists()) {
+                                    try { dataDir = espeakDir.absolutePath } catch (_: Throwable) {}
+                                }
+                                noiseScale = 0.667f
+                                noiseScaleW = 0.8f
                                 lengthScale = 1.0f
-                            )
-                            val modelCfg = OfflineTtsModelConfig(
-                                vits = vitsCfg,
-                                numThreads = 2,
+                            }
+                            val modelCfg = OfflineTtsModelConfig().apply {
+                                vits = vitsCfg
+                                numThreads = 2
                                 debug = false
-                            )
-                            val ttsCfg = OfflineTtsConfig(model = modelCfg)
-                            val sherpaTts = OfflineTts(assetManager = null, config = ttsCfg)
+                            }
+                            val ttsCfg = OfflineTtsConfig().apply {
+                                model = modelCfg
+                            }
+                            val sherpaTts = OfflineTts(assets, ttsCfg)
                             val spd = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
-                            val generated = sherpaTts.generate(text = clean, sid = 0, speed = spd)
+                            val generated = sherpaTts.generate(clean, 0, spd)
                             val samples = generated.samples
                             val sr = generated.sampleRate
                             sherpaTts.release()
@@ -344,6 +348,15 @@ class MainActivity : AppCompatActivity() {
                         }
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
+                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
                         }
                     } else {
