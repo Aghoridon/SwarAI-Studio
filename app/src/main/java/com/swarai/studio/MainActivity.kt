@@ -292,30 +292,6 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 }
-                runOnUiThread {
-                                val engine = tts
-                                if (engine != null && ttsReady) {
-                                    val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
-                                    val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
-                                    engine.setSpeechRate(r)
-                                    engine.setPitch(p)
-                                    engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_utt")
-                                }
-                            }
-                        }.start()
-                        return
-                    }
-                }
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
-                }
-            } else if (tokensFile == null || !tokensFile.exists()) {
-                runOnUiThread {
-                    Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-            runOnUiThread {
                 val engine = tts
                 if (engine != null && ttsReady) {
                     val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
