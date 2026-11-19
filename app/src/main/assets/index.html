@@ -3126,20 +3126,54 @@
 <!-- SWARAI_ONNX_LOCAL_LOADER -->
 <script>
 (function() {
+  function runOnnxScanNow() {
+    var st = document.getElementById("swarai-onnx-status");
+    var sel = document.getElementById("swarai-onnx-select");
+    if (st) st.textContent = "Scanning /storage/emulated/0/SwarAI/models ...";
+    try {
+      if (typeof refreshOnnxList === "function") {
+        refreshOnnxList(true);
+      }
+      if (window.AndroidTTS && typeof window.AndroidTTS.getLocalOnnxModels === "function") {
+        var raw = window.AndroidTTS.getLocalOnnxModels();
+        var models = JSON.parse(raw || "[]");
+        if (sel && Array.isArray(models)) {
+          sel.innerHTML = "";
+          var defOpt = document.createElement("option");
+          defOpt.value = "";
+          defOpt.textContent = models.length > 0
+            ? "-- सिस्टम TTS या नीचे से .onnx चुनें --"
+            : "कोई .onnx मॉडल नहीं मिला (सिस्टम TTS सक्रिय)";
+          sel.appendChild(defOpt);
+          models.forEach(function(m) {
+            var opt = document.createElement("option");
+            opt.value = m.path || "";
+            opt.textContent = (m.name || "model.onnx") + (m.size ? " (" + m.size + ")" : "");
+            sel.appendChild(opt);
+          });
+        }
+        if (st) {
+          st.textContent = models.length > 0
+            ? (models.length + " मॉडल मिले। सूची से चुनें।")
+            : "कोई .onnx मॉडल नहीं मिला। फ़ाइल /storage/emulated/0/SwarAI/models/ में रखें।";
+        }
+      } else if (st) {
+        st.textContent = "AndroidTTS इंटरफ़ेस उपलब्ध नहीं है।";
+      }
+    } catch (err) {
+      if (st) st.textContent = "स्कैन एरर: " + (err && err.message ? err.message : err);
+    }
+  }
+
+  window.__swaraiRefreshOnnxModels = runOnnxScanNow;
+
   function mountOnnxPanel() {
     try {
-      if (document.getElementById("swarai-onnx-card")) return;
+      var existing = document.getElementById("swarai-onnx-card");
+      if (existing) return;
 
-      var voiceSel = document.getElementById("offlineVoiceSelect");
-      var wrap = voiceSel ? (voiceSel.closest(".input-wrap") || voiceSel.parentElement) : null;
-      var parent = wrap ? wrap.parentElement : null;
-
-      if (!parent) {
-        var mainEl = document.querySelector("main") || document.querySelector(".container") || document.body;
-        parent = mainEl;
-        wrap = null;
-      }
-      if (!parent) return;
+      var mainEl = document.querySelector("main") || document.body;
+      if (!mainEl) return;
 
       var folderPath = "/storage/emulated/0/SwarAI/models";
       try {
@@ -3151,12 +3185,12 @@
 
       var card = document.createElement("div");
       card.id = "swarai-onnx-card";
-      card.style.cssText = "position:relative;z-index:20;pointer-events:auto !important;display:block !important;visibility:visible !important;opacity:1 !important;width:100%;box-sizing:border-box;margin:12px 0;padding:12px;border:1px solid rgba(52,211,153,0.55);border-radius:10px;background:rgba(16,185,129,0.10);color:#e5e7eb;";
+      card.style.cssText = "position:relative;z-index:50;pointer-events:auto;display:block;width:100%;box-sizing:border-box;margin:12px 0;padding:12px;border:1px solid rgba(52,211,153,0.55);border-radius:10px;background:rgba(16,185,129,0.10);color:#e5e7eb;";
 
       card.innerHTML =
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;">' +
           '<strong style="font-size:13px;color:#a7f3d0;">ऑफ़लाइन .onnx मॉडल (लोकल फ़ोल्डर)</strong>' +
-          '<button type="button" id="swarai-onnx-scan-btn" style="padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:#1f2937;color:#ffffff;font-size:12px;">मॉडल स्कैन करें</button>' +
+          '<button type="button" id="swarai-onnx-scan-btn" style="position:relative;z-index:60;pointer-events:auto;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.25);background:#1f2937;color:#ffffff;font-size:12px;">मॉडल स्कैन करें</button>' +
         '</div>' +
         '<div style="font-size:11px;opacity:0.85;word-break:break-all;margin-bottom:8px;">फ़ोल्डर: ' + folderPath + '</div>' +
         '<select id="swarai-onnx-select" style="width:100%;padding:8px;border-radius:8px;background:#111827;color:#ffffff;border:1px solid rgba(255,255,255,0.25);margin-bottom:6px;">' +
@@ -3164,96 +3198,47 @@
         '</select>' +
         '<div id="swarai-onnx-status" style="font-size:11px;opacity:0.9;">तैयार: .onnx फ़ाइलें फ़ोल्डर में रखें और स्कैन करें।</div>';
 
-      if (wrap && wrap.nextSibling) {
-        parent.insertBefore(card, wrap.nextSibling);
-      } else {
-        parent.appendChild(card);
-      }
+      mainEl.appendChild(card);
 
       var scanBtn = document.getElementById("swarai-onnx-scan-btn");
       if (scanBtn) {
-        scanBtn.style.pointerEvents = "auto";
-        scanBtn.style.position = "relative";
-        scanBtn.style.zIndex = "999";
-        var triggerScan = function(ev) {
-          if (ev && ev.preventDefault) ev.preventDefault();
-          refreshOnnxList(true);
+        var handleTap = function(e) {
+          if (e) {
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopPropagation) e.stopPropagation();
+          }
+          runOnnxScanNow();
         };
-        scanBtn.onclick = triggerScan;
-        scanBtn.addEventListener("click", triggerScan, true);
-        scanBtn.addEventListener("touchend", triggerScan, { passive: false });
+        scanBtn.onclick = handleTap;
+        scanBtn.addEventListener("click", handleTap, false);
+        scanBtn.addEventListener("touchend", handleTap, { passive: false });
       }
-      var onnxSel = document.getElementById("swarai-onnx-select");
-      if (onnxSel) {
-        onnxSel.addEventListener("change", function() {
-          var val = this.value || "";
+
+      var sel = document.getElementById("swarai-onnx-select");
+      if (sel) {
+        sel.addEventListener("change", function() {
           try {
             if (window.AndroidTTS && typeof window.AndroidTTS.selectOnnxModel === "function") {
-              window.AndroidTTS.selectOnnxModel(val);
+              window.AndroidTTS.selectOnnxModel(sel.value || "");
             }
           } catch (_) {}
-          var st = document.getElementById("swarai-onnx-status");
-          if (st) {
-            st.textContent = val
-              ? "चयनित मॉडल: " + val + " (रनटाइम ब्रिज के लिए तैयार)"
-              : "सिस्टम TTS मोड सक्रिय है।";
-          }
         });
       }
     } catch (_) {}
   }
 
-  function refreshOnnxList(showToastHint) {
-    mountOnnxPanel();
-    try {
-      var sel = document.getElementById("swarai-onnx-select");
-      var st = document.getElementById("swarai-onnx-status");
-      if (!sel || !window.AndroidTTS || typeof window.AndroidTTS.getLocalOnnxModels !== "function") return;
-
-      var raw = window.AndroidTTS.getLocalOnnxModels();
-      var models = JSON.parse(raw || "[]");
-      sel.innerHTML = "";
-
-      var defOpt = document.createElement("option");
-      defOpt.value = "";
-      defOpt.textContent = models.length > 0
-        ? "— सिस्टम TTS (डिफ़ॉल्ट) या नीचे से .onnx चुनें —"
-        : "कोई .onnx मॉडल नहीं मिला (सिस्टम TTS सक्रिय)";
-      sel.appendChild(defOpt);
-
-      models.forEach(function(m) {
-        var opt = document.createElement("option");
-        opt.value = m.path;
-        var cfgNote = m.hasConfigJson ? " +json" : "";
-        opt.textContent = m.name + " (" + m.size + cfgNote + ")";
-        sel.appendChild(opt);
-      });
-
-      var current = "";
-      if (typeof window.AndroidTTS.getSelectedOnnxModel === "function") {
-        current = window.AndroidTTS.getSelectedOnnxModel() || "";
-      }
-      if (current) {
-        sel.value = current;
-      }
-
-      if (st) {
-        if (models.length === 0) {
-          st.textContent = "फ़ोल्डर में कोई .onnx फ़ाइल नहीं मिली। आप अपनी हिंदी .onnx फ़ाइल /storage/emulated/0/SwarAI/models/ में रख सकते हैं।";
-        } else if (showToastHint) {
-          st.textContent = models.length + " .onnx मॉडल मिले। सूची से मॉडल चुनें।";
-        }
-      }
-    } catch (_) {}
-  }
-
-  window.__swaraiRefreshOnnxModels = function() { refreshOnnxList(false); };
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", function() { refreshOnnxList(false); });
+    document.addEventListener("DOMContentLoaded", function() {
+      mountOnnxPanel();
+      runOnnxScanNow();
+    });
+  } else {
+    mountOnnxPanel();
+    runOnnxScanNow();
   }
-  setTimeout(function() { refreshOnnxList(false); }, 250);
-  setTimeout(function() { refreshOnnxList(false); }, 1000);
-  setTimeout(function() { refreshOnnxList(false); }, 2200);
+  setTimeout(function() { mountOnnxPanel(); runOnnxScanNow(); }, 400);
+  setTimeout(function() { mountOnnxPanel(); runOnnxScanNow(); }, 1500);
 })();
 </script>
+
 </body>
