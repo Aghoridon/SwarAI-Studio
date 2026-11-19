@@ -21,13 +21,13 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          gradle wrapper --gradle-version 8.4 --no-daemon || true
-          chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log || {
-            echo "=== FIRST FAILURE LINES ==="
-            grep -n -C 5 "e: \|FAILURE:\|DependencyHandler.module\|Could not" gradle_out.log | head -n 35
-            exit 1
-          }
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log
+          EXIT_CODE=${PIPESTATUS[0]}
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "=== EXACT ERROR LINES ==="
+            grep -n -C 6 "DependencyHandler.module\|e: \|FAILURE:\|Could not\|Execution failed" gradle_out.log | tail -n 35
+            exit "$EXIT_CODE"
+          fi
 
       - name: Rename APK for Easy Download
         run: |
