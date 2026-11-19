@@ -19,14 +19,20 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          api-level: '34'
+          build-tools: '34.0.0'
+
       - name: Build Debug APK
         run: |
-          gradle --version
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
           gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log
           EXIT_CODE=${PIPESTATUS[0]}
           if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "=== ROOT CAUSE ==="
-            grep -n -A 15 "FAILURE:" gradle_out.log | head -n 35
+            echo "=== CAUSED BY ==="
+            grep -n -A 15 "Caused by:" gradle_out.log | head -n 30
             exit "$EXIT_CODE"
           fi
 
