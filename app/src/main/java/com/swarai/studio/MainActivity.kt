@@ -454,10 +454,13 @@ class MainActivity : AppCompatActivity() {
                     tts?.stop()
                 } catch (_: Exception) {}
 
-    override fun onDestroy() {
+
+override fun onDestroy() {
         try {
             tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
         super.onDestroy()
-}}
+}
+
+    }
