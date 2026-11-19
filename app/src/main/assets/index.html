@@ -1,0 +1,2891 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>SwarAI Studio — हाइब्रिड ऑफ़लाइन + ऑनलाइन AI वॉइस स्टूडियो</title>
+  <script src="./lame.min.js"></script>
+  <style>
+    :root {
+      --bg-main: #080d1a;
+      --bg-card: #10182b;
+      --bg-panel: #152038;
+      --bg-input: #0b1222;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-active: rgba(16, 185, 129, 0.45);
+      --emerald: #10b981;
+      --emerald-bright: #22c55e;
+      --emerald-dark: #059669;
+      --teal-btn: #11323b;
+      --teal-btn-border: rgba(20, 184, 166, 0.35);
+      --amber: #f59e0b;
+      --danger: #ef4444;
+      --sky: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Devanagari", sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding: 12px 12px 48px;
+    }
+
+    .app-container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Header Card - Exact SwarAI Studio Look */
+    .top-header {
+      background: linear-gradient(145deg, #111b30, #0d1424);
+      border: 1px solid var(--border-subtle);
+      border-radius: 20px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+
+    .brand-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: #042f2e;
+    }
+
+    .brand-text {
+      min-width: 0;
+    }
+
+    .brand-title-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .brand-title {
+      font-size: 1.12rem;
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: #ffffff;
+    }
+
+    .brand-tag {
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(16, 185, 129, 0.16);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      text-transform: uppercase;
+    }
+
+    .brand-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      white-space: nowrap;
+      flex-shrink: 0;
+      border: 1px solid rgba(56, 189, 248, 0.38);
+      background: rgba(56, 189, 248, 0.12);
+      color: #7dd3fc;
+    }
+
+    .status-pill.online-ai {
+      border-color: rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .status-pill.offline-mode {
+      border-color: rgba(245, 158, 11, 0.4);
+      background: rgba(245, 158, 11, 0.14);
+      color: #fbbf24;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Navigation Tabs */
+    .nav-bar {
+      background: #0e1628;
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 6px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .nav-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      padding: 9px 6px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+
+    .nav-tab.active {
+      background: linear-gradient(145deg, #162440, #121d35);
+      color: #ffffff;
+      border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+    }
+
+    .nav-tab .tab-icon {
+      font-size: 1rem;
+    }
+
+    /* Main Section Cards */
+    .tab-section {
+      display: none;
+    }
+
+    .tab-section.active {
+      display: block;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 22px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+    }
+
+    .step-kicker {
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      color: #2dd4bf;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .card-title {
+      font-size: 1.22rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 10px;
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-subtle);
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+    }
+
+    .mode-banner {
+      border-radius: 14px;
+      padding: 11px 13px;
+      font-size: 0.8rem;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      line-height: 1.45;
+    }
+
+    .mode-banner.offline {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fde68a;
+    }
+
+    .mode-banner.online {
+      background: rgba(16, 185, 129, 0.11);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #a7f3d0;
+    }
+
+    /* Engine Switcher inside TTS Studio */
+    .engine-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      background: var(--bg-input);
+      padding: 6px;
+      border-radius: 15px;
+      border: 1px solid var(--border-subtle);
+      margin-bottom: 14px;
+    }
+
+    .engine-btn {
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--text-muted);
+      padding: 10px 8px;
+      border-radius: 11px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      transition: all 0.18s;
+      font-family: inherit;
+    }
+
+    .engine-btn.active {
+      background: linear-gradient(135deg, #152542, #11323b);
+      color: #ffffff;
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .engine-btn small {
+      font-size: 0.68rem;
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    .field-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 7px;
+    }
+
+    .input-wrap {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select,
+    textarea {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: #ffffff;
+      font-size: 0.94rem;
+      padding: 13px 14px;
+      outline: none;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--emerald);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 125px;
+      line-height: 1.6;
+    }
+
+    .eye-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.12s, opacity 0.2s;
+      font-family: inherit;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #22c55e, #10b981);
+      color: #03261b;
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.28);
+      flex: 1;
+    }
+
+    .btn-teal {
+      background: var(--teal-btn);
+      color: #5eead4;
+      border: 1px solid var(--teal-btn-border);
+      flex: 1;
+    }
+
+    .btn-dark {
+      background: #1a243b;
+      color: #cbd5e1;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.14);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .btn-sm {
+      padding: 8px 11px;
+      font-size: 0.78rem;
+      border-radius: 10px;
+    }
+
+    /* Voice Recording Modes */
+    .record-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+
+    .mic-hero-btn {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.22), rgba(220, 38, 38, 0.12));
+      color: #fecaca;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .mic-hero-btn.recording {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff;
+      animation: pulseRed 1.3s infinite;
+    }
+
+    @keyframes pulseRed {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55); }
+      70% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+    }
+
+    .sub-record-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    canvas.visualizer {
+      width: 100%;
+      height: 54px;
+      background: #0a101f;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      margin-top: 10px;
+      display: none;
+    }
+
+    .sample-script-card {
+      background: rgba(16, 185, 129, 0.07);
+      border: 1px dashed rgba(16, 185, 129, 0.35);
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 14px;
+      font-size: 0.84rem;
+      color: #d1fae5;
+    }
+
+    .script-switch-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    /* Saved Cloned Voices List */
+    .voice-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .voice-item {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .voice-item.selected {
+      border-color: var(--emerald);
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .voice-meta {
+      min-width: 0;
+      flex: 1;
+    }
+
+    .voice-name {
+      font-weight: 800;
+      font-size: 0.92rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .voice-badge-mini {
+      font-size: 0.65rem;
+      padding: 1px 6px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    .voice-badge-mini.offline {
+      background: rgba(56, 189, 248, 0.15);
+      color: #7dd3fc;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    .voice-badge-mini.online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .voice-id-sub {
+      font-size: 0.73rem;
+      color: var(--text-muted);
+      font-family: monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Emotion Chips */
+    .chips-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      background: #16223b;
+      border: 1px solid var(--border-subtle);
+      color: #93c5fd;
+      padding: 5px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .chip:active {
+      background: rgba(16, 185, 129, 0.25);
+      color: #fff;
+    }
+
+    /* Preset Chips for Offline Voice Character */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .preset-btn {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      color: #e2e8f0;
+      border-radius: 12px;
+      padding: 9px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .preset-btn.active {
+      border-color: var(--emerald);
+      background: rgba(16, 185, 129, 0.14);
+      color: #6ee7b7;
+    }
+
+    /* Long-form Progress Panel */
+    .progress-box {
+      display: none;
+      background: var(--bg-panel);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 16px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 10px;
+      background: #0a101f;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      transition: width 0.25s ease;
+    }
+
+    /* Audio Library & Editor */
+    .storage-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      padding: 11px 14px;
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+    }
+
+    .audio-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 13px;
+      margin-bottom: 10px;
+    }
+
+    .audio-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .audio-title {
+      font-weight: 800;
+      font-size: 0.94rem;
+      color: #fff;
+    }
+
+    .audio-sub {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+    }
+
+    audio {
+      width: 100%;
+      height: 38px;
+      margin: 6px 0 10px;
+      border-radius: 10px;
+    }
+
+    /* Waveform Editor */
+    .editor-panel {
+      display: none;
+      background: #0d1527;
+      border: 1px solid rgba(16, 185, 129, 0.45);
+      border-radius: 18px;
+      padding: 15px;
+      margin-bottom: 16px;
+    }
+
+    #waveformCanvas {
+      width: 100%;
+      height: 110px;
+      background: #070b15;
+      border-radius: 12px;
+      border: 1px solid var(--border-subtle);
+      cursor: pointer;
+      display: block;
+      margin: 10px 0;
+    }
+
+    .slider-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .slider-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 9px 11px;
+    }
+
+    .slider-box label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 5px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--emerald);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(90px);
+      background: #10b981;
+      color: #03261b;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 11px 18px;
+      border-radius: 999px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+      z-index: 9999;
+      transition: transform 0.25s ease;
+      max-width: 92vw;
+      text-align: center;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .toast.error {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .helper-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- TOP HEADER -->
+    <header class="top-header">
+      <div class="brand-left">
+        <div class="brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <rect x="3" y="9" width="2.4" height="6" rx="1.2"></rect>
+            <rect x="7" y="5" width="2.4" height="14" rx="1.2"></rect>
+            <rect x="11" y="2" width="2.4" height="20" rx="1.2"></rect>
+            <rect x="15" y="6" width="2.4" height="12" rx="1.2"></rect>
+            <rect x="19" y="9" width="2.4" height="6" rx="1.2"></rect>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-title-row">
+            <span class="brand-title">SwarAI Studio</span>
+            <span class="brand-tag">HYBRID</span>
+          </div>
+          <div class="brand-sub">100% ऑफ़लाइन इंजन + ऑनलाइन AI वॉइस क्लोनिंग</div>
+        </div>
+      </div>
+      <div id="apiStatusPill" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="apiStatusText">ऑफ़लाइन इंजन तैयार</span>
+      </div>
+    </header>
+
+    <!-- NAVIGATION TABS -->
+    <nav class="nav-bar">
+      <button class="nav-tab active" data-tab="tab-tts" onclick="switchTab('tab-tts')">
+        <span class="tab-icon">🔊</span>
+        <span>1. TTS स्टूडियो</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-clone" onclick="switchTab('tab-clone')">
+        <span class="tab-icon">🎙️</span>
+        <span>2. क्लोनिंग/वॉइस</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-library" onclick="switchTab('tab-library')">
+        <span class="tab-icon">🎛️</span>
+        <span>3. लाइब्रेरी</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-api" onclick="switchTab('tab-api')">
+        <span class="tab-icon">🔑</span>
+        <span>API सेटअप</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1 (DEFAULT): HYBRID TTS STUDIO (OFFLINE ENGINE + ONLINE CLONE ENGINE) -->
+    <section id="tab-tts" class="tab-section active">
+      <div class="card">
+        <div class="step-kicker">HYBRID SPEECH ENGINE • ऑफ़लाइन और ऑनलाइन दोनों एक साथ</div>
+        <h2 class="card-title">टेक्स्ट-टू-स्पीच स्टूडियो (20+ मिनट तक)</h2>
+
+        <!-- Dynamic Network / Mode Banner -->
+        <div id="ttsNetworkBanner" class="mode-banner online">
+          <span>🌐</span>
+          <span id="ttsNetworkBannerText">इंटरनेट चालू है: आप ऑनलाइन AI क्लोन वॉइस या 100% ऑफ़लाइन वॉइस इंजन—दोनों का उपयोग कर सकते हैं।</span>
+        </div>
+
+        <!-- Engine Switcher -->
+        <div class="engine-switch">
+          <button type="button" id="btnModeOffline" class="engine-btn" onclick="setTtsEngineMode('offline')">
+            <span>📴 ऑफ़लाइन इंजन (बिना API)</span>
+            <small>100% बिना इंटरनेट • तुरंत स्पीच</small>
+          </button>
+          <button type="button" id="btnModeOnline" class="engine-btn active" onclick="setTtsEngineMode('online')">
+            <span>✨ ऑनलाइन AI क्लोन (API)</span>
+            <small>आपकी क्लोन आवाज़ • सिंगल MP3</small>
+          </button>
+        </div>
+
+        <!-- ONLINE AI CLONE VOICE CONTROLS -->
+        <div id="onlineTtsControls">
+          <label class="field-label" for="ttsVoiceSelect">
+            <span>ऑनलाइन क्लोन की गई आवाज़ चुनें</span>
+            <span style="color:#34d399; font-size:0.75rem;">हिंदी + English क्रॉस-लिंगुअल</span>
+          </label>
+          <div class="input-wrap">
+            <select id="ttsVoiceSelect" onchange="onSelectTtsVoice()"></select>
+          </div>
+
+          <div class="slider-grid" style="margin-top:0; margin-bottom:12px;">
+            <div class="slider-box">
+              <label>
+                <span>टुकड़ों के बीच विराम (Gap)</span>
+                <span id="chunkGapVal">150 ms</span>
+              </label>
+              <input type="range" id="chunkGapSlider" min="0" max="600" step="50" value="150" oninput="document.getElementById('chunkGapVal').textContent = this.value + ' ms'" />
+            </div>
+            <div class="slider-box">
+              <label><span>MP3 आउटपुट नाम</span></label>
+              <input type="text" id="outputFileName" placeholder="Auto नाम" style="padding:6px 9px; font-size:0.8rem; border-radius:9px;" />
+            </div>
+          </div>
+        </div>
+
+        <!-- OFFLINE ENGINE CONTROLS (NO API KEY NEEDED) -->
+        <div id="offlineTtsControls" style="display:none;">
+          <label class="field-label" for="offlineVoiceSelect">
+            <span>डिवाइस की ऑफ़लाइन आवाज़ चुनें (बिना API Key)</span>
+            <button type="button" class="btn btn-dark btn-sm" style="padding:3px 8px; font-size:0.72rem;" onclick="populateOfflineVoices(true)">🔄 रिफ्रेश</button>
+          </label>
+          <div class="input-wrap">
+            <select id="offlineVoiceSelect"></select>
+          </div>
+
+          <div class="field-label">
+            <span>ऑफ़लाइन वॉइस कैरेक्टर प्रीसेट (आवाज़ बदलें)</span>
+          </div>
+          <div class="preset-grid">
+            <button type="button" class="preset-btn active" onclick="applyOfflinePreset(this, 1.0, 1.0)">🎙️ सामान्य स्पष्ट (Normal)</button>
+            <button type="button" class="preset-btn" onclick="applyOfflinePreset(this, 0.78, 0.94)">📻 गहरा पॉडकास्ट (Deep Male)</button>
+            <button type="button" class="preset-btn" onclick="applyOfflinePreset(this, 1.24, 1.0)">👩 मधुर स्त्री टोन (Soft High)</button>
+            <button type="button" class="preset-btn" onclick="applyOfflinePreset(this, 0.88, 0.85)">📖 धीमी कहानी वाचक (Story)</button>
+            <button type="button" class="preset-btn" onclick="applyOfflinePreset(this, 1.05, 1.18)">⚡ तेज़ समाचार (News Anchor)</button>
+            <button type="button" class="preset-btn" onclick="applyOfflinePreset(this, 0.65, 0.86)">🧙‍♂️ रहस्यमयी भारी (Mystic)</button>
+          </div>
+
+          <div class="slider-grid" style="margin-top:0; margin-bottom:12px;">
+            <div class="slider-box">
+              <label><span>पिच (आवाज़ का भारीपन)</span><span id="offPitchVal">1.00</span></label>
+              <input type="range" id="offPitchSlider" min="0.50" max="1.60" step="0.02" value="1.00" oninput="document.getElementById('offPitchVal').textContent = parseFloat(this.value).toFixed(2)" />
+            </div>
+            <div class="slider-box">
+              <label><span>बोलने की गति (Speed)</span><span id="offRateVal">1.00x</span></label>
+              <input type="range" id="offRateSlider" min="0.60" max="1.60" step="0.05" value="1.00" oninput="document.getElementById('offRateVal').textContent = parseFloat(this.value).toFixed(2) + 'x'" />
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; margin-bottom:10px;">
+            <button type="button" class="btn btn-teal btn-sm" onclick="saveCurrentOfflineVoicePreset()">💾 इस ऑफ़लाइन वॉइस स्टाइल को Vault में सेव करें</button>
+          </div>
+        </div>
+
+        <!-- SHARED EMOTION TAGS (WORKS IN BOTH ONLINE & OFFLINE ENGINES) -->
+        <div class="field-label">
+          <span>इमोशन और विराम टैग्स (दोनों इंजन में काम करते हैं)</span>
+        </div>
+        <div class="chips-wrap">
+          <button type="button" class="chip" onclick="insertEmotionTag('[excited]')">[excited]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[whispering]')">[whispering]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[sad]')">[sad]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[angry]')">[angry]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[soft]')">[soft]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[emphasis]')">[emphasis]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[laughing]')">[laughing]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[pause]')">[pause]</button>
+          <button type="button" class="chip" onclick="insertEmotionTag('[long pause]')">[long pause]</button>
+        </div>
+
+        <label class="field-label" for="ttsScriptInput">
+          <span>अपनी स्क्रिप्ट लिखें या पेस्ट करें (हिंदी या English)</span>
+          <span id="scriptStats" style="color:#94a3b8; font-size:0.75rem;">0 अक्षर • ~0.0 मिनट</span>
+        </label>
+        <div class="input-wrap">
+          <textarea id="ttsScriptInput" style="min-height:175px;" oninput="updateScriptStats()" placeholder="यहाँ अपनी छोटी या 20–30 मिनट की लंबी हिंदी या अंग्रेजी कहानी/स्क्रिप्ट पेस्ट करें...&#10;&#10;उदाहरण: [excited] नमस्कार दोस्तों! Today I am testing SwarAI Hybrid Studio. [pause] यह बिना इंटरनेट के भी पूरी स्क्रिप्ट पढ़ सकता है!"></textarea>
+        </div>
+
+        <!-- ACTION BUTTONS (AUTO-ADAPT TO ONLINE OR OFFLINE ENGINE) -->
+        <div id="onlineActionRow" class="btn-row">
+          <button type="button" id="generateTtsBtn" class="btn btn-primary" onclick="startLongFormTTS()">
+            <span>🚀</span>
+            <span>क्लोन आवाज़ से MP3 बनाएं</span>
+          </button>
+          <button type="button" id="cancelTtsBtn" class="btn btn-danger" style="display:none;" onclick="cancelLongFormTTS()">
+            <span>⏹️</span>
+            <span>रोकें</span>
+          </button>
+        </div>
+
+        <div id="offlineActionRow" class="btn-row" style="display:none;">
+          <button type="button" id="offlineSpeakBtn" class="btn btn-primary" onclick="startOfflineSpeech()">
+            <span>▶️</span>
+            <span>ऑफ़लाइन सुनें (20+ मिनट तक)</span>
+          </button>
+          <button type="button" id="offlinePauseBtn" class="btn btn-teal" style="display:none;" onclick="toggleOfflinePause()">
+            <span>⏸️</span>
+            <span id="offlinePauseText">रोकें (Pause)</span>
+          </button>
+          <button type="button" id="offlineStopBtn" class="btn btn-danger" style="display:none;" onclick="stopOfflineSpeech()">
+            <span>⏹️</span>
+            <span>बंद करें</span>
+          </button>
+        </div>
+
+        <!-- LIVE CHUNKING PROGRESS BOX (SHARED BY ONLINE & OFFLINE) -->
+        <div id="ttsProgressBox" class="progress-box">
+          <div style="display:flex; justify-content:space-between; font-size:0.82rem; font-weight:800;">
+            <span id="ttsProgressTitle" style="color:#34d399;">प्रोसेसिंग शुरू हो रही है...</span>
+            <span id="ttsProgressPercent">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="ttsProgressFill" class="progress-fill"></div>
+          </div>
+          <div id="ttsProgressSub" style="font-size:0.76rem; color:var(--text-muted);">
+            लंबी स्क्रिप्ट को वाक्यों के आधार पर छोटे हिस्सों में प्रोसेस किया जा रहा है...
+          </div>
+        </div>
+
+        <!-- LATEST GENERATED AUDIO RESULT -->
+        <div id="latestAudioBox" style="display:none; margin-top:16px; background:var(--bg-panel); border:1px solid rgba(16,185,129,0.4); border-radius:16px; padding:14px;">
+          <div style="font-weight:800; color:#34d399; font-size:0.92rem; margin-bottom:6px;" id="latestAudioHeading">✅ MP3 तैयार और लाइब्रेरी में सेव हो गई!</div>
+          <audio id="latestAudioPlayer" controls></audio>
+          <div class="btn-row">
+            <button type="button" class="btn btn-primary btn-sm" onclick="downloadLatestAudio()">
+              <span>⬇️</span>
+              <span>MP3 डाउनलोड करें</span>
+            </button>
+            <button type="button" class="btn btn-teal btn-sm" onclick="openLatestInEditor()">
+              <span>✂️</span>
+              <span>एडिटर में खोलें</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: VOICE CLONING (ONLINE) & PERMANENT VOICE VAULT (ONLINE + OFFLINE) -->
+    <section id="tab-clone" class="tab-section">
+      <div class="card">
+        <div class="step-kicker">VOICE RECORDER & AI CLONING</div>
+        <h2 class="card-title">माइक रिकॉर्डर और AI वॉइस क्लोनिंग</h2>
+
+        <div id="cloneOfflineNotice" class="mode-banner offline" style="display:none;">
+          <span>📴</span>
+          <span>अभी इंटरनेट बंद है या API Key नहीं डाली गई है। आप नीचे <strong>फ़ोन माइक से आवाज़ रिकॉर्ड</strong> करके उसे MP3 लाइब्रेरी में सेव और एडिट कर सकते हैं; ऑनलाइन AI क्लोनिंग इंटरनेट आने पर चालू होगी।</span>
+        </div>
+
+        <div class="record-box">
+          <!-- Direct Native Phone Microphone Trigger (100% Offline Capable) -->
+          <button type="button" class="mic-hero-btn" onclick="triggerNativePhoneMic()">
+            <span>📱</span>
+            <span>डायरेक्ट फोन के माइक से रिकॉर्ड करें</span>
+          </button>
+          <input type="file" id="nativeMicInput" accept="audio/*" capture="microphone" style="display:none" onchange="handleAudioSampleSelected(event, 'फ़ोन माइक रिकॉर्डिंग')" />
+
+          <div class="sub-record-grid">
+            <button type="button" id="liveMicBtn" class="btn btn-teal btn-sm" onclick="toggleLiveBrowserMic()">
+              <span>🎙️</span>
+              <span id="liveMicBtnText">लाइव ब्राउज़र माइक</span>
+            </button>
+            <button type="button" class="btn btn-dark btn-sm" onclick="document.getElementById('uploadSampleInput').click()">
+              <span>📂</span>
+              <span>ऑडियो फ़ाइल चुनें</span>
+            </button>
+            <input type="file" id="uploadSampleInput" accept="audio/*" style="display:none" onchange="handleAudioSampleSelected(event, 'अपलोड की गई फ़ाइल')" />
+          </div>
+
+          <canvas id="micVisualizer" class="visualizer"></canvas>
+          <div id="recordingTimer" style="display:none; margin-top:8px; font-weight:800; color:#f87171; font-size:0.86rem;">● रिकॉर्डिंग जारी है: 00:00</div>
+
+          <div id="samplePreviewBox" style="display:none; margin-top:12px; text-align:left;">
+            <div style="font-size:0.8rem; color:#34d399; font-weight:700; margin-bottom:4px;" id="sampleSourceLabel">✓ ऑडियो रिकॉर्डिंग तैयार है</div>
+            <audio id="samplePreviewPlayer" controls></audio>
+            <div class="btn-row" style="margin-top:6px;">
+              <button type="button" class="btn btn-dark btn-sm" onclick="saveRecordedSampleToLibrary()" style="flex:1;">💾 इसे ऑफ़लाइन लाइब्रेरी में सेव करें</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guided Sample Scripts -->
+        <div class="sample-script-card">
+          <div class="script-switch-row">
+            <button type="button" class="btn btn-dark btn-sm" onclick="fillSampleScript('hi')">🇮🇳 हिंदी सैंपल स्क्रिप्ट भरें</button>
+            <button type="button" class="btn btn-dark btn-sm" onclick="fillSampleScript('en')">🇬🇧 English Sample भरें</button>
+          </div>
+          <div id="guidedScriptPreview" style="font-size:0.8rem; color:#a7f3d0;">
+            ऊपर बटन दबाकर पढ़ने के लिए तैयार स्क्रिप्ट भरें, या अपनी पसंद का कोई भी 15–25 सेकंड का वाक्य बोलें।
+          </div>
+        </div>
+
+        <label class="field-label" for="cloneVoiceName">
+          <span>आवाज़ का नाम (Voice Name)</span>
+        </label>
+        <div class="input-wrap">
+          <input type="text" id="cloneVoiceName" placeholder="उदाहरण: मेरी हिंदी आवाज़ / Siddharth Story Voice" />
+        </div>
+
+        <label class="field-label" for="cloneTranscript">
+          <span>सैंपल ऑडियो में बोले गए शब्द (Exact Transcript)</span>
+        </label>
+        <div class="input-wrap">
+          <textarea id="cloneTranscript" style="min-height:80px;" placeholder="ऑडियो में जो बोला गया है, उसे यहाँ हूबहू लिखें (हिंदी या अंग्रेजी)..."></textarea>
+        </div>
+
+        <button type="button" id="cloneSubmitBtn" class="btn btn-primary" style="width:100%;" onclick="createClonedVoice()">
+          <span>✨</span>
+          <span>ऑनलाइन AI से आवाज़ क्लोन करें</span>
+        </button>
+      </div>
+
+      <!-- SAVED VOICES VAULT (10+ Online Cloned + Offline Custom Voices) -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div>
+            <div class="step-kicker">PERMANENT VOICE VAULT (10+ VOICES)</div>
+            <h3 class="card-title" style="margin-bottom:0;">मेरी सेव की गई आवाज़ें (<span id="savedVoicesCount">0</span>)</h3>
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" onclick="toggleManualVoiceBox()">+ Voice ID जोड़ें</button>
+        </div>
+
+        <div id="manualVoiceBox" style="display:none; background:var(--bg-panel); padding:12px; border-radius:14px; margin-bottom:12px; border:1px solid var(--border-subtle);">
+          <input type="text" id="manualVoiceTitle" placeholder="आवाज़ का नाम लिखें" style="margin-bottom:8px;" />
+          <input type="text" id="manualVoiceId" placeholder="Fish Audio Reference ID पेस्ट करें" style="margin-bottom:8px;" />
+          <button type="button" class="btn btn-primary btn-sm" style="width:100%;" onclick="addManualVoice()">सेव करें</button>
+        </div>
+
+        <p class="helper-note" style="margin-bottom:10px;">
+          यहाँ आपकी सभी ऑनलाइन क्लोन वॉइस और ऑफ़लाइन कस्टम वॉइस प्रोफाइल स्थायी रूप से सेव रहती हैं।
+        </p>
+
+        <div id="savedVoicesList" class="voice-list"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: PERMANENT MP3 LIBRARY & AUDIO EDITOR (100% OFFLINE) -->
+    <section id="tab-library" class="tab-section">
+      <!-- VISUAL AUDIO EDITOR PANEL -->
+      <div id="audioEditorPanel" class="editor-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div>
+            <div class="step-kicker">100% OFFLINE WAVEFORM EDITOR</div>
+            <h3 style="font-size:1.05rem; font-weight:800; color:#fff;" id="editorTrackTitle">ऑडियो एडिटर</h3>
+          </div>
+          <button type="button" class="btn btn-dark btn-sm" onclick="closeEditor()">✕ बंद करें</button>
+        </div>
+
+        <canvas id="waveformCanvas" width="640" height="110"></canvas>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#94a3b8; margin-bottom:8px;">
+          <span id="editorSelectionInfo">चयन: 0.00s – 0.00s</span>
+          <span id="editorTotalDuration">कुल अवधि: 0.00s</span>
+        </div>
+
+        <div class="slider-grid">
+          <div class="slider-box">
+            <label><span>Start कट (%)</span><span id="trimStartLabel">0%</span></label>
+            <input type="range" id="trimStartSlider" min="0" max="98" value="0" oninput="updateTrimSelection()" />
+          </div>
+          <div class="slider-box">
+            <label><span>End कट (%)</span><span id="trimEndLabel">100%</span></label>
+            <input type="range" id="trimEndSlider" min="2" max="100" value="100" oninput="updateTrimSelection()" />
+          </div>
+        </div>
+
+        <!-- Trim / Cut / Join / Undo Actions -->
+        <div class="btn-row" style="margin-bottom:10px;">
+          <button type="button" class="btn btn-teal btn-sm" onclick="applyTrimKeep()" style="flex:1;">✂️ केवल चुना हिस्सा रखें (Trim)</button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="applyCutDelete()" style="flex:1;">🗑️ चुना हिस्सा हटाएं (Cut)</button>
+        </div>
+
+        <div class="btn-row" style="margin-bottom:12px;">
+          <button type="button" class="btn btn-dark btn-sm" onclick="document.getElementById('appendAudioInput').click()" style="flex:1;">➕ दूसरी ऑडियो जोड़ें (Merge)</button>
+          <button type="button" id="editorUndoBtn" class="btn btn-dark btn-sm" onclick="undoEditorChange()" disabled>↩️ Undo</button>
+          <input type="file" id="appendAudioInput" accept="audio/*" style="display:none" onchange="appendExternalAudioToEditor(event)" />
+        </div>
+
+        <!-- Voice Enhancement Sliders -->
+        <div class="slider-grid">
+          <div class="slider-box">
+            <label><span>वॉल्यूम बूस्ट (Gain)</span><span id="gainVal">100%</span></label>
+            <input type="range" id="gainSlider" min="50" max="250" step="10" value="100" oninput="document.getElementById('gainVal').textContent = this.value + '%'" />
+          </div>
+          <div class="slider-box">
+            <label><span>स्पीड (Speed)</span><span id="speedVal">1.00x</span></label>
+            <input type="range" id="speedSlider" min="0.75" max="1.50" step="0.05" value="1.00" oninput="document.getElementById('speedVal').textContent = parseFloat(this.value).toFixed(2) + 'x'" />
+          </div>
+          <div class="slider-box">
+            <label><span>बेस और स्पष्टता (EQ)</span><span id="eqVal">Normal</span></label>
+            <select id="eqPresetSelect" style="padding:6px 8px; font-size:0.78rem; border-radius:8px;" onchange="document.getElementById('eqVal').textContent = this.options[this.selectedIndex].text.split(' ')[0]">
+              <option value="none">Normal (मूल आवाज़)</option>
+              <option value="podcast">Podcast (गहरा बेस + स्पष्ट)</option>
+              <option value="crisp">Crisp (तेज़ और साफ़ उच्चारण)</option>
+              <option value="warm">Warm (मधुर कहानी टोन)</option>
+            </select>
+          </div>
+          <div class="slider-box">
+            <label><span>Fade In / Out</span><span id="fadeVal">0.0s</span></label>
+            <input type="range" id="fadeSlider" min="0" max="4" step="0.5" value="0" oninput="document.getElementById('fadeVal').textContent = parseFloat(this.value).toFixed(1) + 's'" />
+          </div>
+        </div>
+
+        <div class="btn-row" style="margin-top:10px;">
+          <button type="button" class="btn btn-dark btn-sm" onclick="previewEditedBuffer()">▶️ एडिटेड सुनें</button>
+          <button type="button" class="btn btn-primary btn-sm" onclick="saveEditedToLibrary(true)">💾 सेव और MP3 डाउनलोड करें</button>
+        </div>
+        <audio id="editorPreviewPlayer" controls style="display:none; margin-top:10px;"></audio>
+      </div>
+
+      <!-- PERMANENT MP3 LIBRARY -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:10px;">
+          <div>
+            <div class="step-kicker">100% OFFLINE PERMANENT MP3 VAULT</div>
+            <h2 class="card-title" style="margin-bottom:0;">सेव की गई MP3 फ़ाइलें (<span id="libraryCount">0</span>)</h2>
+          </div>
+          <button type="button" class="btn btn-teal btn-sm" onclick="document.getElementById('importAudioToLibInput').click()">+ ऑडियो लाएं</button>
+          <input type="file" id="importAudioToLibInput" accept="audio/*" style="display:none" onchange="importExternalFileToLibrary(event)" />
+        </div>
+
+        <div class="storage-banner">
+          <span>💾 <strong>कुल स्टोरेज उपयोग:</strong> <span id="totalStorageUsed">0.0 MB</span></span>
+          <span style="color:#34d399; font-weight:700;">डिलीट करने तक सुरक्षित</span>
+        </div>
+
+        <div id="audioLibraryList"></div>
+      </div>
+    </section>
+
+    <!-- TAB 4: API SETUP & BACKUP -->
+    <section id="tab-api" class="tab-section">
+      <div class="card">
+        <div class="step-kicker">OPTIONAL ONLINE AI • API कॉन्फ़िगरेशन</div>
+        <h2 class="card-title">Fish Audio API सेटअप (ऑनलाइन क्लोनिंग के लिए)</h2>
+        <div class="security-badge">
+          <span>🔒</span>
+          <span>100% डिवाइस में स्थायी रूप से सुरक्षित (Local + IndexedDB)</span>
+        </div>
+
+        <p class="helper-note" style="margin-top:0; margin-bottom:12px;">
+          बिना API Key और बिना इंटरनेट के ऐप का <strong>ऑफ़लाइन वॉइस इंजन, माइक रिकॉर्डर, MP3 लाइब्रेरी और ऑडियो एडिटर</strong> पूरी तरह काम करते हैं। ऑनलाइन AI वॉइस क्लोनिंग के लिए नीचे अपनी API Key सेव करें:
+        </p>
+
+        <label class="field-label" for="apiKeyInput">
+          <span>Fish Audio API Key (sk-fish-...)</span>
+        </label>
+        <div class="input-wrap">
+          <input type="password" id="apiKeyInput" placeholder="अपनी sk-fish-... API Key यहाँ पेस्ट करें" autocomplete="off" />
+          <button type="button" class="eye-btn" onclick="toggleApiVisibility()" title="Show/Hide Key">👁️</button>
+        </div>
+
+        <label class="field-label" for="modelSelect">
+          <span>AI वॉइस मॉडल (Model)</span>
+        </label>
+        <div class="input-wrap">
+          <select id="modelSelect">
+            <option value="s2.1-pro-free">S2.1 Pro Free (मुफ़्त / Free Tier)</option>
+            <option value="s2.1-pro">S2.1 Pro (Standard)</option>
+            <option value="s1">Fish Speech S1</option>
+          </select>
+        </div>
+
+        <div class="btn-row" style="margin-bottom: 10px;">
+          <button type="button" class="btn btn-primary" onclick="saveApiConfig()">
+            <span>💾</span>
+            <span>Save Locally / सेव करें</span>
+          </button>
+          <button type="button" id="fetchVoicesBtn" class="btn btn-teal" onclick="fetchRemoteVoices()">
+            <span>🔄</span>
+            <span>Fetch My Cloned Voices / आवाज़ें लाएं</span>
+          </button>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-dark btn-sm" onclick="exportBackupJson()" style="flex:1;">
+            <span>📤</span>
+            <span>बैकअप सेव करें (.json)</span>
+          </button>
+          <button type="button" class="btn btn-dark btn-sm" onclick="document.getElementById('importJsonInput').click()" style="flex:1;">
+            <span>📥</span>
+            <span>बैकअप रिस्टोर करें</span>
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="clearApiKey()">
+            <span>🗑️</span>
+            <span>Clear Key</span>
+          </button>
+          <input type="file" id="importJsonInput" accept=".json,application/json" style="display:none" onchange="importBackupJson(event)" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================================================================
+    // 1. PERMANENT STORAGE ENGINE (IndexedDB + LocalStorage Dual Persistence)
+    // =========================================================================
+    const DB_NAME = 'SwarAI_HybridStudio_DB_v3';
+    const DB_VERSION = 1;
+    let db = null;
+
+    const state = {
+      apiKey: '',
+      model: 's2.1-pro-free',
+      isOnline: navigator.onLine,
+      engineMode: 'online', // 'online' | 'offline'
+      voices: [],
+      selectedVoiceId: '',
+      offlineDeviceVoices: [],
+      currentSampleBlob: null,
+      mediaRecorder: null,
+      recordedChunks: [],
+      recTimerInterval: null,
+      recSeconds: 0,
+      isGeneratingTTS: false,
+      cancelRequested: false,
+      latestAudioRecord: null,
+      // Offline Speech queue state
+      offlineQueue: [],
+      offlineIndex: 0,
+      isOfflineSpeaking: false,
+      isOfflinePaused: false,
+      // Editor state
+      editorSourceId: null,
+      editorTitle: '',
+      editorBuffer: null,
+      editorHistory: [],
+      audioCtx: null
+    };
+
+    function getAudioContext() {
+      if (!state.audioCtx) {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        state.audioCtx = new AudioCtx();
+      }
+      if (state.audioCtx.state === 'suspended') {
+        state.audioCtx.resume();
+      }
+      return state.audioCtx;
+    }
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, DB_VERSION);
+        req.onupgradeneeded = (e) => {
+          const database = e.target.result;
+          if (!database.objectStoreNames.contains('settings')) {
+            database.createObjectStore('settings', { keyPath: 'key' });
+          }
+          if (!database.objectStoreNames.contains('voices')) {
+            database.createObjectStore('voices', { keyPath: 'id' });
+          }
+          if (!database.objectStoreNames.contains('audios')) {
+            database.createObjectStore('audios', { keyPath: 'id' });
+          }
+        };
+        req.onsuccess = (e) => {
+          db = e.target.result;
+          resolve(db);
+        };
+        req.onerror = (e) => reject(e.target.error);
+      });
+    }
+
+    function dbPut(storeName, value) {
+      return new Promise((resolve, reject) => {
+        if (!db) return resolve(null);
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.put(value);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function dbGetAll(storeName) {
+      return new Promise((resolve, reject) => {
+        if (!db) return resolve([]);
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function dbDelete(storeName, key) {
+      return new Promise((resolve, reject) => {
+        if (!db) return resolve();
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
+        const req = store.delete(key);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function showToast(msg, isError = false) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = 'toast show' + (isError ? ' error' : '');
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => {
+        el.classList.remove('show');
+      }, 3200);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      document.querySelector(`.nav-tab[data-tab="${tabId}"]`).classList.add('active');
+      if (tabId === 'tab-library') {
+        renderAudioLibrary();
+      }
+    }
+
+    // =========================================================================
+    // 2. HYBRID ONLINE/OFFLINE ORCHESTRATOR & INITIALIZATION
+    // =========================================================================
+    async function initApp() {
+      try {
+        await openDatabase();
+      } catch (err) {
+        console.warn('IndexedDB unavailable, using localStorage fallback:', err);
+      }
+
+      let savedKey = localStorage.getItem('swarai_fish_api_key') || '';
+      let savedModel = localStorage.getItem('swarai_fish_model') || 's2.1-pro-free';
+      let savedSelectedVoice = localStorage.getItem('swarai_selected_voice') || '';
+
+      if (db) {
+        const settings = await dbGetAll('settings');
+        const keyObj = settings.find(s => s.key === 'apiKey');
+        const modelObj = settings.find(s => s.key === 'model');
+        if (!savedKey && keyObj) savedKey = keyObj.value;
+        if (modelObj && modelObj.value) savedModel = modelObj.value;
+      }
+
+      state.apiKey = savedKey;
+      state.model = savedModel;
+      state.selectedVoiceId = savedSelectedVoice;
+
+      document.getElementById('apiKeyInput').value = savedKey;
+      document.getElementById('modelSelect').value = savedModel;
+
+      // Load offline device speech synthesis voices
+      populateOfflineVoices(false);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.onvoiceschanged = () => populateOfflineVoices(false);
+      }
+
+      await loadSavedVoices();
+      await renderAudioLibrary();
+
+      // Auto-select appropriate engine based on internet + API key availability
+      syncHybridConnectivityState();
+      window.addEventListener('online', () => {
+        state.isOnline = true;
+        syncHybridConnectivityState();
+        showToast('🌐 इंटरनेट कनेक्ट हो गया — ऑनलाइन AI क्लोनिंग सक्रिय!');
+      });
+      window.addEventListener('offline', () => {
+        state.isOnline = false;
+        syncHybridConnectivityState();
+        showToast('📴 इंटरनेट बंद है — ऐप ऑफ़लाइन मोड में काम कर रहा है');
+      });
+    }
+
+    function syncHybridConnectivityState() {
+      state.isOnline = navigator.onLine;
+      const hasKey = Boolean(state.apiKey && state.apiKey.trim().length > 8);
+      const canUseOnlineAI = state.isOnline && hasKey;
+
+      const pill = document.getElementById('apiStatusPill');
+      const pillTxt = document.getElementById('apiStatusText');
+      const banner = document.getElementById('ttsNetworkBanner');
+      const bannerTxt = document.getElementById('ttsNetworkBannerText');
+      const cloneNotice = document.getElementById('cloneOfflineNotice');
+      const cloneBtn = document.getElementById('cloneSubmitBtn');
+      const fetchBtn = document.getElementById('fetchVoicesBtn');
+
+      if (!state.isOnline) {
+        pill.className = 'status-pill offline-mode';
+        pillTxt.textContent = 'ऑफ़लाइन मोड';
+        banner.className = 'mode-banner offline';
+        bannerTxt.innerHTML = '📴 <strong>इंटरनेट बंद है:</strong> ऑनलाइन AI क्लोनिंग रुकी हुई है, लेकिन <strong>ऑफ़लाइन वॉइस इंजन, माइक रिकॉर्डिंग, MP3 लाइब्रेरी और ऑडियो एडिटर</strong> 100% चालू हैं।';
+        cloneNotice.style.display = 'flex';
+        cloneBtn.disabled = true;
+        if (fetchBtn) fetchBtn.disabled = true;
+        setTtsEngineMode('offline');
+      } else if (!hasKey) {
+        pill.className = 'status-pill';
+        pillTxt.textContent = 'ऑफ़लाइन इंजन सक्रिय';
+        banner.className = 'mode-banner offline';
+        bannerTxt.innerHTML = '🔑 <strong>बिना API Key मोड:</strong> अभी <strong>100% ऑफ़लाइन वॉइस इंजन</strong> सक्रिय है। ऑनलाइन AI क्लोनिंग के लिए "API सेटअप" में Key डालें।';
+        cloneNotice.style.display = 'flex';
+        cloneBtn.disabled = true;
+        if (fetchBtn) fetchBtn.disabled = false;
+        setTtsEngineMode('offline');
+      } else {
+        pill.className = 'status-pill online-ai';
+        pillTxt.textContent = 'ऑनलाइन AI + ऑफ़लाइन';
+        banner.className = 'mode-banner online';
+        bannerTxt.innerHTML = '🌐 <strong>हाइब्रिड मोड सक्रिय:</strong> इंटरनेट और API Key उपलब्ध हैं — आप <strong>ऑनलाइन AI क्लोन वॉइस</strong> या <strong>100% ऑफ़लाइन इंजन</strong> दोनों चुन सकते हैं।';
+        cloneNotice.style.display = 'none';
+        cloneBtn.disabled = false;
+        if (fetchBtn) fetchBtn.disabled = false;
+        setTtsEngineMode('online');
+      }
+    }
+
+    function setTtsEngineMode(mode) {
+      const hasKey = Boolean(state.apiKey && state.apiKey.trim().length > 8);
+      if (mode === 'online' && (!state.isOnline || !hasKey)) {
+        if (!state.isOnline) {
+          showToast('इंटरनेट बंद है — ऑफ़लाइन इंजन का उपयोग करें', true);
+        } else {
+          showToast('ऑनलाइन क्लोनिंग के लिए पहले API सेटअप में Key सेव करें', true);
+        }
+        mode = 'offline';
+      }
+
+      state.engineMode = mode;
+      const isOff = mode === 'offline';
+
+      document.getElementById('btnModeOffline').classList.toggle('active', isOff);
+      document.getElementById('btnModeOnline').classList.toggle('active', !isOff);
+
+      document.getElementById('offlineTtsControls').style.display = isOff ? 'block' : 'none';
+      document.getElementById('onlineTtsControls').style.display = isOff ? 'none' : 'block';
+
+      document.getElementById('offlineActionRow').style.display = isOff ? 'flex' : 'none';
+      document.getElementById('onlineActionRow').style.display = isOff ? 'none' : 'flex';
+    }
+
+    function toggleApiVisibility() {
+      const inp = document.getElementById('apiKeyInput');
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    async function saveApiConfig() {
+      const key = document.getElementById('apiKeyInput').value.trim();
+      const model = document.getElementById('modelSelect').value;
+      if (!key) {
+        showToast('कृपया पहले अपनी Fish Audio API Key पेस्ट करें', true);
+        return;
+      }
+      state.apiKey = key;
+      state.model = model;
+      localStorage.setItem('swarai_fish_api_key', key);
+      localStorage.setItem('swarai_fish_model', model);
+      await dbPut('settings', { key: 'apiKey', value: key });
+      await dbPut('settings', { key: 'model', value: model });
+      syncHybridConnectivityState();
+      showToast('✅ API Key सेव हो गई! अब ऑनलाइन और ऑफ़लाइन दोनों इंजन उपलब्ध हैं।');
+    }
+
+    async function clearApiKey() {
+      state.apiKey = '';
+      document.getElementById('apiKeyInput').value = '';
+      localStorage.removeItem('swarai_fish_api_key');
+      await dbDelete('settings', 'apiKey');
+      syncHybridConnectivityState();
+      showToast('🗑️ API Key हटा दी गई — ऐप अब ऑफ़लाइन इंजन पर चलेगा');
+    }
+
+    async function exportBackupJson() {
+      const backup = {
+        app: 'SwarAI Hybrid Studio',
+        exportedAt: new Date().toISOString(),
+        apiKey: state.apiKey,
+        model: state.model,
+        voices: state.voices
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      triggerDownload(blob, `SwarAI_Backup_${new Date().toISOString().slice(0,10)}.json`);
+      showToast('📤 बैकअप फ़ाइल डाउनलोड हो गई');
+    }
+
+    async function importBackupJson(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (data.apiKey) {
+          state.apiKey = data.apiKey;
+          document.getElementById('apiKeyInput').value = data.apiKey;
+          localStorage.setItem('swarai_fish_api_key', data.apiKey);
+          await dbPut('settings', { key: 'apiKey', value: data.apiKey });
+        }
+        if (data.model) {
+          state.model = data.model;
+          document.getElementById('modelSelect').value = data.model;
+        }
+        if (Array.isArray(data.voices)) {
+          for (const v of data.voices) {
+            if (v.id && v.title) await dbPut('voices', v);
+          }
+        }
+        syncHybridConnectivityState();
+        await loadSavedVoices();
+        showToast('📥 बैकअप सफलतापूर्वक रिस्टोर हो गया!');
+      } catch (err) {
+        showToast('अमान्य बैकअप फ़ाइल', true);
+      }
+      e.target.value = '';
+    }
+
+    // =========================================================================
+    // 3. 100% OFFLINE SPEECH SYNTHESIS ENGINE (NO API KEY, NO INTERNET)
+    // =========================================================================
+    function populateOfflineVoices(notify = false) {
+      if (!('speechSynthesis' in window)) {
+        document.getElementById('offlineVoiceSelect').innerHTML = `<option value="">डिवाइस स्पीच इंजन उपलब्ध नहीं</option>`;
+        return;
+      }
+      const voices = window.speechSynthesis.getVoices() || [];
+      state.offlineDeviceVoices = voices;
+      const sel = document.getElementById('offlineVoiceSelect');
+
+      if (voices.length === 0) {
+        sel.innerHTML = `<option value="">डिफ़ॉल्ट सिस्टम ऑफ़लाइन आवाज़ (Hindi/English)</option>`;
+        if (notify) showToast('डिफ़ॉल्ट ऑफ़लाइन आवाज़ सक्रिय है');
+        return;
+      }
+
+      // Prioritize Hindi (hi) and Indian English (en-IN) at top
+      const sorted = [...voices].sort((a, b) => {
+        const score = (v) => {
+          const l = (v.lang || '').toLowerCase();
+          if (l.startsWith('hi')) return 0;
+          if (l.includes('in')) return 1;
+          if (l.startsWith('en')) return 2;
+          return 3;
+        };
+        return score(a) - score(b);
+      });
+
+      sel.innerHTML = sorted.map((v) => {
+        const origIdx = voices.indexOf(v);
+        const tag = (v.lang || '').toLowerCase().startsWith('hi') ? '🇮🇳 ' : ((v.lang || '').toLowerCase().startsWith('en') ? '🇬🇧 ' : '🗣️ ');
+        return `<option value="${origIdx}">${tag}${escapeHtml(v.name)} (${escapeHtml(v.lang)})</option>`;
+      }).join('');
+
+      if (notify) showToast(`✅ ${voices.length} ऑफ़लाइन आवाज़ें लोड हुईं`);
+    }
+
+    function applyOfflinePreset(btnEl, pitch, rate) {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      document.getElementById('offPitchSlider').value = pitch;
+      document.getElementById('offPitchVal').textContent = parseFloat(pitch).toFixed(2);
+      document.getElementById('offRateSlider').value = rate;
+      document.getElementById('offRateVal').textContent = parseFloat(rate).toFixed(2) + 'x';
+    }
+
+    async function saveCurrentOfflineVoicePreset() {
+      const sel = document.getElementById('offlineVoiceSelect');
+      const voiceLabel = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : 'Offline Voice';
+      const pitch = parseFloat(document.getElementById('offPitchSlider').value);
+      const rate = parseFloat(document.getElementById('offRateSlider').value);
+      const name = prompt('इस ऑफ़लाइन वॉइस प्रोफाइल का नाम लिखें:', `Offline: ${voiceLabel.slice(0, 22)} (P:${pitch})`);
+      if (!name || !name.trim()) return;
+
+      const record = {
+        id: 'off_' + Date.now(),
+        title: name.trim(),
+        engine: 'offline',
+        deviceVoiceName: sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '',
+        pitch,
+        rate,
+        createdAt: new Date().toISOString()
+      };
+      await dbPut('voices', record);
+      await loadSavedVoices();
+      showToast('✅ ऑफ़लाइन वॉइस प्रोफाइल Vault में सेव हो गई!');
+    }
+
+    function parseOfflineChunkEmotion(chunk, basePitch, baseRate) {
+      let pitch = basePitch;
+      let rate = baseRate;
+      let volume = 1.0;
+      let pauseAfterMs = 180;
+
+      if (/\[long pause\]/i.test(chunk)) pauseAfterMs = 1500;
+      else if (/\[pause\]/i.test(chunk)) pauseAfterMs = 750;
+
+      if (/\[excited\]|\[laughing\]|\[emphasis\]/i.test(chunk)) {
+        pitch = Math.min(1.65, basePitch * 1.12);
+        rate = Math.min(1.65, baseRate * 1.08);
+      } else if (/\[sad\]|\[sighing\]/i.test(chunk)) {
+        pitch = Math.max(0.5, basePitch * 0.88);
+        rate = Math.max(0.6, baseRate * 0.88);
+      } else if (/\[whispering\]|\[soft\]/i.test(chunk)) {
+        volume = 0.65;
+        rate = Math.max(0.6, baseRate * 0.90);
+      } else if (/\[angry\]/i.test(chunk)) {
+        pitch = Math.max(0.55, basePitch * 0.92);
+        rate = Math.min(1.6, baseRate * 1.12);
+      }
+
+      // Remove bracket tags so the offline engine doesn't read "[excited]" literally
+      const cleanText = chunk.replace(/\[[^\]]+\]/g, ' ').replace(/\s+/g, ' ').trim();
+      return { cleanText, pitch, rate, volume, pauseAfterMs };
+    }
+
+    function startOfflineSpeech() {
+      if (!('speechSynthesis' in window)) {
+        showToast('इस ब्राउज़र में ऑफ़लाइन स्पीच इंजन सपोर्ट नहीं है', true);
+        return;
+      }
+      const script = document.getElementById('ttsScriptInput').value.trim();
+      if (!script) {
+        showToast('कृपया पढ़ने के लिए टेक्स्ट लिखें या पेस्ट करें', true);
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const chunks = splitTextIntoChunks(script, 260);
+      state.offlineQueue = chunks;
+      state.offlineIndex = 0;
+      state.isOfflineSpeaking = true;
+      state.isOfflinePaused = false;
+
+      document.getElementById('offlineSpeakBtn').disabled = true;
+      document.getElementById('offlinePauseBtn').style.display = 'inline-flex';
+      document.getElementById('offlineStopBtn').style.display = 'inline-flex';
+      document.getElementById('offlinePauseText').textContent = 'रोकें (Pause)';
+      document.getElementById('ttsProgressBox').style.display = 'block';
+
+      speakNextOfflineChunk();
+    }
+
+    function speakNextOfflineChunk() {
+      if (!state.isOfflineSpeaking) return;
+
+      if (state.offlineIndex >= state.offlineQueue.length) {
+        stopOfflineSpeech(true);
+        showToast('✅ पूरी स्क्रिप्ट ऑफ़लाइन पढ़ी जा चुकी है!');
+        return;
+      }
+
+      const total = state.offlineQueue.length;
+      const idx = state.offlineIndex;
+      const pct = Math.round(((idx + 1) / total) * 100);
+
+      document.getElementById('ttsProgressTitle').textContent = `ऑफ़लाइन इंजन: भाग ${idx + 1} / ${total} बोल रहा है...`;
+      document.getElementById('ttsProgressPercent').textContent = `${pct}%`;
+      document.getElementById('ttsProgressFill').style.width = `${pct}%`;
+      document.getElementById('ttsProgressSub').textContent = `"${state.offlineQueue[idx].slice(0, 70)}..."`;
+
+      const basePitch = parseFloat(document.getElementById('offPitchSlider').value) || 1.0;
+      const baseRate = parseFloat(document.getElementById('offRateSlider').value) || 1.0;
+      const parsed = parseOfflineChunkEmotion(state.offlineQueue[idx], basePitch, baseRate);
+
+      if (!parsed.cleanText) {
+        state.offlineIndex++;
+        setTimeout(speakNextOfflineChunk, parsed.pauseAfterMs);
+        return;
+      }
+
+      const utter = new SpeechSynthesisUtterance(parsed.cleanText);
+      const voiceIdx = document.getElementById('offlineVoiceSelect').value;
+      if (voiceIdx !== '' && state.offlineDeviceVoices[voiceIdx]) {
+        utter.voice = state.offlineDeviceVoices[voiceIdx];
+        utter.lang = state.offlineDeviceVoices[voiceIdx].lang;
+      } else {
+        utter.lang = /[\u0900-\u097F]/.test(parsed.cleanText) ? 'hi-IN' : 'en-IN';
+      }
+
+      utter.pitch = parsed.pitch;
+      utter.rate = parsed.rate;
+      utter.volume = parsed.volume;
+
+      utter.onend = () => {
+        if (!state.isOfflineSpeaking) return;
+        state.offlineIndex++;
+        setTimeout(speakNextOfflineChunk, parsed.pauseAfterMs);
+      };
+
+      utter.onerror = () => {
+        if (!state.isOfflineSpeaking) return;
+        state.offlineIndex++;
+        setTimeout(speakNextOfflineChunk, 150);
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    function toggleOfflinePause() {
+      if (!state.isOfflineSpeaking) return;
+      if (state.isOfflinePaused) {
+        window.speechSynthesis.resume();
+        state.isOfflinePaused = false;
+        document.getElementById('offlinePauseText').textContent = 'रोकें (Pause)';
+      } else {
+        window.speechSynthesis.pause();
+        state.isOfflinePaused = true;
+        document.getElementById('offlinePauseText').textContent = 'जारी रखें (Resume)';
+      }
+    }
+
+    function stopOfflineSpeech(completed = false) {
+      state.isOfflineSpeaking = false;
+      state.isOfflinePaused = false;
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      document.getElementById('offlineSpeakBtn').disabled = false;
+      document.getElementById('offlinePauseBtn').style.display = 'none';
+      document.getElementById('offlineStopBtn').style.display = 'none';
+      if (completed) {
+        document.getElementById('ttsProgressTitle').textContent = '✅ ऑफ़लाइन वाचन पूर्ण हुआ!';
+        document.getElementById('ttsProgressPercent').textContent = '100%';
+        document.getElementById('ttsProgressFill').style.width = '100%';
+      } else {
+        document.getElementById('ttsProgressBox').style.display = 'none';
+      }
+    }
+
+    // =========================================================================
+    // 4. MIC RECORDING (OFFLINE) & ONLINE VOICE CLONING (10+ PERMANENT VOICES)
+    // =========================================================================
+    function triggerNativePhoneMic() {
+      const input = document.getElementById('nativeMicInput');
+      input.value = '';
+      input.click();
+    }
+
+    function handleAudioSampleSelected(event, sourceLabel) {
+      const file = event.target.files[0];
+      if (!file) return;
+      state.currentSampleBlob = file;
+      const url = URL.createObjectURL(file);
+      const player = document.getElementById('samplePreviewPlayer');
+      player.src = url;
+      document.getElementById('sampleSourceLabel').textContent = `✓ ${sourceLabel} लोड हो गई (${(file.size / 1024).toFixed(0)} KB)`;
+      document.getElementById('samplePreviewBox').style.display = 'block';
+      showToast('🎙️ ऑडियो रिकॉर्डिंग तैयार है!');
+    }
+
+    async function saveRecordedSampleToLibrary() {
+      if (!state.currentSampleBlob) return;
+      try {
+        const ctx = getAudioContext();
+        const arr = await state.currentSampleBlob.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(arr.slice(0));
+        const mp3Blob = await encodeAudioBufferToMp3(decoded);
+        const title = `Mic_Recording_${Date.now().toString().slice(-5)}.mp3`;
+        await dbPut('audios', {
+          id: 'aud_' + Date.now(),
+          title,
+          voiceName: 'Phone Mic Recording',
+          duration: decoded.duration,
+          sizeBytes: mp3Blob.size,
+          createdAt: new Date().toISOString(),
+          blob: mp3Blob
+        });
+        await renderAudioLibrary();
+        showToast('✅ रिकॉर्डिंग ऑफ़लाइन MP3 लाइब्रेरी में सेव हो गई!');
+      } catch (err) {
+        showToast('रिकॉर्डिंग सेव करने में त्रुटि हुई', true);
+      }
+    }
+
+    async function toggleLiveBrowserMic() {
+      const btn = document.getElementById('liveMicBtn');
+      const btnTxt = document.getElementById('liveMicBtnText');
+      const timerEl = document.getElementById('recordingTimer');
+      const canvas = document.getElementById('micVisualizer');
+
+      if (state.mediaRecorder && state.mediaRecorder.state === 'recording') {
+        state.mediaRecorder.stop();
+        clearInterval(state.recTimerInterval);
+        btn.classList.remove('recording');
+        btnTxt.textContent = 'लाइव ब्राउज़र माइक';
+        timerEl.style.display = 'none';
+        canvas.style.display = 'none';
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        showToast('सीधे फ़ोन का नेटिव माइक खुल रहा है...');
+        triggerNativePhoneMic();
+        return;
+      }
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        state.recordedChunks = [];
+        state.mediaRecorder = new MediaRecorder(stream);
+
+        state.mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) state.recordedChunks.push(e.data);
+        };
+
+        state.mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(state.recordedChunks, { type: 'audio/webm' });
+          state.currentSampleBlob = blob;
+          const url = URL.createObjectURL(blob);
+          document.getElementById('samplePreviewPlayer').src = url;
+          document.getElementById('sampleSourceLabel').textContent = `✓ लाइव रिकॉर्डिंग तैयार (${state.recSeconds} सेकंड)`;
+          document.getElementById('samplePreviewBox').style.display = 'block';
+          showToast('✅ लाइव रिकॉर्डिंग सेव हो गई!');
+        };
+
+        state.mediaRecorder.start();
+        state.recSeconds = 0;
+        btn.classList.add('recording');
+        btnTxt.textContent = '⏹️ रिकॉर्डिंग रोकें';
+        timerEl.style.display = 'block';
+        canvas.style.display = 'block';
+        startMicVisualizer(stream, canvas);
+
+        state.recTimerInterval = setInterval(() => {
+          state.recSeconds++;
+          const m = String(Math.floor(state.recSeconds / 60)).padStart(2, '0');
+          const s = String(state.recSeconds % 60).padStart(2, '0');
+          timerEl.textContent = `● रिकॉर्डिंग जारी है: ${m}:${s}`;
+        }, 1000);
+      } catch (err) {
+        showToast('डायरेक्ट फ़ोन माइक खुल रहा है...');
+        setTimeout(() => triggerNativePhoneMic(), 450);
+      }
+    }
+
+    function startMicVisualizer(stream, canvas) {
+      try {
+        const ctx = getAudioContext();
+        const src = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 64;
+        src.connect(analyser);
+        const dataArr = new Uint8Array(analyser.frequencyBinCount);
+        const cCtx = canvas.getContext('2d');
+
+        function draw() {
+          if (!state.mediaRecorder || state.mediaRecorder.state !== 'recording') return;
+          requestAnimationFrame(draw);
+          analyser.getByteFrequencyData(dataArr);
+          cCtx.fillStyle = '#0a101f';
+          cCtx.fillRect(0, 0, canvas.width, canvas.height);
+          const barW = (canvas.width / dataArr.length) * 1.5;
+          let x = 0;
+          for (let i = 0; i < dataArr.length; i++) {
+            const h = (dataArr[i] / 255) * canvas.height;
+            cCtx.fillStyle = '#10b981';
+            cCtx.fillRect(x, canvas.height - h, barW - 2, h);
+            x += barW;
+          }
+        }
+        draw();
+      } catch (e) {}
+    }
+
+    function fillSampleScript(lang) {
+      const scripts = {
+        hi: 'नमस्कार दोस्तों, आज हम तकनीक और आवाज़ की इस अद्भुत दुनिया के बारे में बात कर रहे हैं। मेरी आवाज़ का यह नमूना बिल्कुल साफ़ और स्पष्ट है, ताकि यह हर भावना और उतार-चढ़ाव को सही तरीके से समझ सके।',
+        en: 'Hello everyone, welcome to my studio. Today I am recording a clear sample of my natural voice so that it can speak both Hindi and English with genuine emotion and clarity.'
+      };
+      const text = scripts[lang];
+      document.getElementById('cloneTranscript').value = text;
+      document.getElementById('guidedScriptPreview').textContent = `पढ़ें: "${text}"`;
+    }
+
+    async function createClonedVoice() {
+      if (!navigator.onLine) {
+        showToast('इंटरनेट बंद है — ऑनलाइन AI क्लोनिंग के लिए इंटरनेट चालू करें', true);
+        return;
+      }
+      if (!state.apiKey) {
+        showToast('पहले API सेटअप में अपनी Fish Audio API Key सेव करें', true);
+        switchTab('tab-api');
+        return;
+      }
+      if (!state.currentSampleBlob) {
+        showToast('कृपया पहले माइक से आवाज़ रिकॉर्ड करें या ऑडियो फ़ाइल चुनें', true);
+        return;
+      }
+      const voiceName = document.getElementById('cloneVoiceName').value.trim() || `My Voice ${state.voices.length + 1}`;
+      const transcript = document.getElementById('cloneTranscript').value.trim();
+
+      const btn = document.getElementById('cloneSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span><span>आवाज़ क्लोन हो रही है...</span>';
+
+      try {
+        const formData = new FormData();
+        formData.append('visibility', 'private');
+        formData.append('type', 'tts');
+        formData.append('title', voiceName);
+        formData.append('train_mode', 'fast');
+        formData.append('enhance_audio_quality', 'true');
+        formData.append('voices', state.currentSampleBlob, state.currentSampleBlob.name || 'sample.wav');
+        if (transcript) {
+          formData.append('texts', transcript);
+        }
+
+        const resp = await fetch('https://api.fish.audio/model', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${state.apiKey}` },
+          body: formData
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) {
+          throw new Error(data.message || data.detail || `API Error ${resp.status}`);
+        }
+
+        const newId = data._id || data.id;
+        if (!newId) throw new Error('सर्वर से Voice ID प्राप्त नहीं हुई');
+
+        const voiceRecord = {
+          id: newId,
+          title: voiceName,
+          engine: 'online',
+          createdAt: new Date().toISOString()
+        };
+
+        await dbPut('voices', voiceRecord);
+        state.selectedVoiceId = newId;
+        localStorage.setItem('swarai_selected_voice', newId);
+        await loadSavedVoices();
+        setTtsEngineMode('online');
+
+        showToast(`🎉 "${voiceName}" सफलतापूर्वक क्लोन और सेव हो गई!`);
+        switchTab('tab-tts');
+      } catch (err) {
+        console.error(err);
+        showToast(`क्लोनिंग एरर: ${err.message}`, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨</span><span>ऑनलाइन AI से आवाज़ क्लोन करें</span>';
+      }
+    }
+
+    async function fetchRemoteVoices() {
+      if (!navigator.onLine) {
+        showToast('इंटरनेट बंद होने के कारण ऑनलाइन आवाज़ें सिंक नहीं हो सकतीं', true);
+        return;
+      }
+      if (!state.apiKey) {
+        showToast('पहले अपनी API Key डालकर Save Locally दबाएं', true);
+        return;
+      }
+      showToast('🔄 Fish Audio से आपकी क्लोन आवाज़ें लाई जा रही हैं...');
+      try {
+        const resp = await fetch('https://api.fish.audio/model?self=true&page_size=50', {
+          headers: { 'Authorization': `Bearer ${state.apiKey}` }
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.message || `Error ${resp.status}`);
+
+        const items = data.items || (Array.isArray(data) ? data : []);
+        let added = 0;
+        for (const item of items) {
+          const id = item._id || item.id;
+          if (id) {
+            await dbPut('voices', {
+              id,
+              title: item.title || 'Cloned Voice',
+              engine: 'online',
+              createdAt: item.created_at || new Date().toISOString()
+            });
+            added++;
+          }
+        }
+        await loadSavedVoices();
+        showToast(`✅ ${added} क्लोन आवाज़ें सिंक होकर सेव हो गईं!`);
+      } catch (err) {
+        showToast(`आवाज़ें लाने में त्रुटि: ${err.message}`, true);
+      }
+    }
+
+    function toggleManualVoiceBox() {
+      const box = document.getElementById('manualVoiceBox');
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function addManualVoice() {
+      const title = document.getElementById('manualVoiceTitle').value.trim();
+      const id = document.getElementById('manualVoiceId').value.trim();
+      if (!title || !id) {
+        showToast('नाम और Voice ID दोनों लिखें', true);
+        return;
+      }
+      await dbPut('voices', { id, title, engine: 'online', createdAt: new Date().toISOString() });
+      state.selectedVoiceId = id;
+      localStorage.setItem('swarai_selected_voice', id);
+      document.getElementById('manualVoiceTitle').value = '';
+      document.getElementById('manualVoiceId').value = '';
+      document.getElementById('manualVoiceBox').style.display = 'none';
+      await loadSavedVoices();
+      showToast('✅ क्लोन वॉइस प्रोफाइल सेव हो गई');
+    }
+
+    async function loadSavedVoices() {
+      let list = [];
+      if (db) list = await dbGetAll('voices');
+      if (list.length > 0) {
+        localStorage.setItem('swarai_voices_mirror', JSON.stringify(list));
+      } else {
+        try {
+          list = JSON.parse(localStorage.getItem('swarai_voices_mirror') || '[]');
+        } catch (e) { list = []; }
+      }
+
+      list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      state.voices = list;
+
+      const onlineVoices = list.filter(v => v.engine !== 'offline');
+      if (!state.selectedVoiceId && onlineVoices.length > 0) {
+        state.selectedVoiceId = onlineVoices[0].id;
+      }
+
+      document.getElementById('savedVoicesCount').textContent = list.length;
+
+      // Render in Voice Vault
+      const container = document.getElementById('savedVoicesList');
+      if (list.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding:18px; color:var(--text-muted); font-size:0.84rem; background:var(--bg-panel); border-radius:14px;">अभी कोई कस्टम या क्लोन वॉइस सेव नहीं है। ऑनलाइन क्लोनिंग से या ऑफ़लाइन वॉइस प्रीसेट से अपनी प्रोफाइल सेव करें।</div>`;
+      } else {
+        container.innerHTML = list.map(v => {
+          const isOffline = v.engine === 'offline';
+          const isSel = v.id === state.selectedVoiceId;
+          return `
+            <div class="voice-item ${isSel ? 'selected' : ''}">
+              <div class="voice-meta" onclick="selectVoiceProfile('${v.id}', false)" style="cursor:pointer;">
+                <div class="voice-name">
+                  <span>${isSel ? '🟢' : '🎙️'} ${escapeHtml(v.title)}</span>
+                  <span class="voice-badge-mini ${isOffline ? 'offline' : 'online'}">${isOffline ? 'OFFLINE' : 'AI CLONE'}</span>
+                </div>
+                <div class="voice-id-sub">${isOffline ? `Pitch: ${v.pitch} • Speed: ${v.rate}x` : `ID: ${escapeHtml(v.id)}`}</div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button type="button" class="btn btn-teal btn-sm" onclick="selectVoiceProfile('${v.id}', true)">चुनें</button>
+                <button type="button" class="btn btn-dark btn-sm" onclick="renameVoiceProfile('${v.id}')">✏️</button>
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteVoiceProfile('${v.id}')">🗑️</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Render Online Cloned Voices in TTS Dropdown
+      const selectEl = document.getElementById('ttsVoiceSelect');
+      if (onlineVoices.length === 0) {
+        selectEl.innerHTML = `<option value="">-- पहले '2. क्लोनिंग/वॉइस' टैब में अपनी आवाज़ क्लोन करें --</option>`;
+      } else {
+        selectEl.innerHTML = onlineVoices.map(v =>
+          `<option value="${escapeHtml(v.id)}" ${v.id === state.selectedVoiceId ? 'selected' : ''}>🎙️ ${escapeHtml(v.title)}</option>`
+        ).join('');
+      }
+    }
+
+    async function selectVoiceProfile(id, goToTts = false) {
+      const v = state.voices.find(x => x.id === id);
+      if (!v) return;
+      state.selectedVoiceId = id;
+      localStorage.setItem('swarai_selected_voice', id);
+
+      if (v.engine === 'offline') {
+        setTtsEngineMode('offline');
+        applyOfflinePreset(null, v.pitch || 1.0, v.rate || 1.0);
+        showToast(`📴 ऑफ़लाइन प्रोफाइल "${v.title}" सक्रिय`);
+      } else {
+        setTtsEngineMode('online');
+        showToast(`✓ क्लोन आवाज़ "${v.title}" चुन ली गई`);
+      }
+      await loadSavedVoices();
+      if (goToTts) switchTab('tab-tts');
+    }
+
+    function onSelectTtsVoice() {
+      const id = document.getElementById('ttsVoiceSelect').value;
+      state.selectedVoiceId = id;
+      localStorage.setItem('swarai_selected_voice', id);
+    }
+
+    async function renameVoiceProfile(id) {
+      const v = state.voices.find(x => x.id === id);
+      if (!v) return;
+      const nextName = prompt('इस आवाज़ का नया नाम लिखें:', v.title);
+      if (nextName && nextName.trim()) {
+        v.title = nextName.trim();
+        await dbPut('voices', v);
+        await loadSavedVoices();
+        showToast('✏️ नाम अपडेट हो गया');
+      }
+    }
+
+    async function deleteVoiceProfile(id) {
+      if (!confirm('क्या आप इस वॉइस प्रोफाइल को ऐप से हटाना चाहते हैं?')) return;
+      await dbDelete('voices', id);
+      if (state.selectedVoiceId === id) state.selectedVoiceId = '';
+      await loadSavedVoices();
+      showToast('🗑️ वॉइस प्रोफाइल हटा दी गई');
+    }
+
+    // =========================================================================
+    // 5. ONLINE LONG-FORM AUTO-CHUNKING TTS (20+ MINUTES) & MP3 STITCHING
+    // =========================================================================
+    function insertEmotionTag(tag) {
+      const ta = document.getElementById('ttsScriptInput');
+      const start = ta.selectionStart || ta.value.length;
+      const end = ta.selectionEnd || ta.value.length;
+      const before = ta.value.substring(0, start);
+      const after = ta.value.substring(end);
+      const insert = (before && !before.endsWith(' ') && !before.endsWith('\n') ? ' ' : '') + tag + ' ';
+      ta.value = before + insert + after;
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = start + insert.length;
+      updateScriptStats();
+    }
+
+    function updateScriptStats() {
+      const text = document.getElementById('ttsScriptInput').value;
+      const chars = text.length;
+      const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+      const estMins = (words / 135).toFixed(1);
+      const chunks = splitTextIntoChunks(text, 420).length;
+      document.getElementById('scriptStats').textContent = `${chars} अक्षर • ~${estMins} मिनट (${chunks} भाग)`;
+    }
+
+    function splitTextIntoChunks(rawText, maxChars = 420) {
+      const clean = rawText.replace(/\r\n/g, '\n').trim();
+      if (!clean) return [];
+
+      const sentenceRegex = /[^।.!?\n]+[।.!?\n]*/g;
+      const sentences = clean.match(sentenceRegex) || [clean];
+      const chunks = [];
+      let current = '';
+
+      for (let s of sentences) {
+        s = s.trim();
+        if (!s) continue;
+
+        if ((current + ' ' + s).trim().length <= maxChars) {
+          current = (current ? current + ' ' : '') + s;
+        } else {
+          if (current) chunks.push(current.trim());
+          if (s.length > maxChars) {
+            const words = s.split(/\s+/);
+            let sub = '';
+            for (const w of words) {
+              if ((sub + ' ' + w).trim().length <= maxChars) {
+                sub = (sub ? sub + ' ' : '') + w;
+              } else {
+                if (sub) chunks.push(sub.trim());
+                sub = w;
+              }
+            }
+            current = sub;
+          } else {
+            current = s;
+          }
+        }
+      }
+      if (current.trim()) chunks.push(current.trim());
+      return chunks;
+    }
+
+    async function fetchTtsChunkWithRetry(chunkText, voiceId, retries = 3) {
+      for (let attempt = 1; attempt <= retries; attempt++) {
+        if (state.cancelRequested) throw new Error('प्रक्रिया रोक दी गई');
+        try {
+          const resp = await fetch('https://api.fish.audio/v1/tts', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${state.apiKey}`,
+              'Content-Type': 'application/json',
+              'model': state.model || 's2.1-pro-free'
+            },
+            body: JSON.stringify({
+              text: chunkText,
+              reference_id: voiceId,
+              format: 'mp3',
+              mp3_bitrate: 128,
+              normalize: true
+            })
+          });
+
+          if (!resp.ok) {
+            let errMsg = `HTTP ${resp.status}`;
+            try {
+              const errJson = await resp.json();
+              errMsg = errJson.message || errJson.detail || errMsg;
+            } catch (e) {}
+            throw new Error(errMsg);
+          }
+
+          return await resp.arrayBuffer();
+        } catch (err) {
+          if (attempt === retries || state.cancelRequested) throw err;
+          await new Promise(r => setTimeout(r, 1500 * attempt));
+        }
+      }
+    }
+
+    async function startLongFormTTS() {
+      if (!navigator.onLine) {
+        showToast('इंटरनेट बंद है — ऑफ़लाइन इंजन का उपयोग करें', true);
+        setTtsEngineMode('offline');
+        return;
+      }
+      if (!state.apiKey) {
+        showToast('कृपया पहले API सेटअप में अपनी API Key सेव करें', true);
+        switchTab('tab-api');
+        return;
+      }
+      const voiceId = document.getElementById('ttsVoiceSelect').value;
+      if (!voiceId) {
+        showToast('कृपया पहले अपनी क्लोन की गई आवाज़ चुनें', true);
+        return;
+      }
+      const script = document.getElementById('ttsScriptInput').value.trim();
+      if (!script) {
+        showToast('कृपया ऑडियो बनाने के लिए टेक्स्ट लिखें या पेस्ट करें', true);
+        return;
+      }
+
+      const chunks = splitTextIntoChunks(script, 420);
+      const gapMs = parseInt(document.getElementById('chunkGapSlider').value, 10) || 150;
+      const customName = document.getElementById('outputFileName').value.trim();
+      const voiceObj = state.voices.find(v => v.id === voiceId);
+      const voiceTitle = voiceObj ? voiceObj.title : 'ClonedVoice';
+
+      state.isGeneratingTTS = true;
+      state.cancelRequested = false;
+
+      const genBtn = document.getElementById('generateTtsBtn');
+      const cancelBtn = document.getElementById('cancelTtsBtn');
+      const progBox = document.getElementById('ttsProgressBox');
+      const progTitle = document.getElementById('ttsProgressTitle');
+      const progPct = document.getElementById('ttsProgressPercent');
+      const progFill = document.getElementById('ttsProgressFill');
+      const progSub = document.getElementById('ttsProgressSub');
+
+      genBtn.disabled = true;
+      cancelBtn.style.display = 'inline-flex';
+      progBox.style.display = 'block';
+      document.getElementById('latestAudioBox').style.display = 'none';
+
+      try {
+        const audioBuffers = [];
+        const ctx = getAudioContext();
+
+        for (let i = 0; i < chunks.length; i++) {
+          if (state.cancelRequested) throw new Error('यूज़र द्वारा रोका गया');
+
+          const pct = Math.round((i / chunks.length) * 85);
+          progTitle.textContent = `भाग ${i + 1} / ${chunks.length} जनरेट हो रहा है...`;
+          progPct.textContent = `${pct}%`;
+          progFill.style.width = `${pct}%`;
+          progSub.textContent = `वर्तमान वाक्य: "${chunks[i].slice(0, 65)}..."`;
+
+          const arrayBuf = await fetchTtsChunkWithRetry(chunks[i], voiceId, 3);
+          const decoded = await ctx.decodeAudioData(arrayBuf.slice(0));
+          audioBuffers.push(decoded);
+        }
+
+        progTitle.textContent = 'सभी ऑडियो हिस्सों को एक साथ जोड़ा जा रहा है...';
+        progPct.textContent = '90%';
+        progFill.style.width = '90%';
+        progSub.textContent = 'सीमलेस ऑडियो स्टिचिंग और MP3 एन्कोडिंग जारी है...';
+        await new Promise(r => setTimeout(r, 60));
+
+        const stitchedBuffer = stitchAudioBuffers(audioBuffers, gapMs);
+
+        progTitle.textContent = 'सिंगल MP3 फ़ाइल तैयार की जा रही है...';
+        progPct.textContent = '96%';
+        progFill.style.width = '96%';
+        await new Promise(r => setTimeout(r, 60));
+
+        const mp3Blob = await encodeAudioBufferToMp3(stitchedBuffer);
+        const fileName = (customName || `${voiceTitle.replace(/[^a-zA-Z0-9\u0900-\u097F_-]/g, '_')}_${Date.now().toString().slice(-5)}`) + '.mp3';
+
+        const record = {
+          id: 'aud_' + Date.now(),
+          title: fileName,
+          voiceName: voiceTitle,
+          duration: stitchedBuffer.duration,
+          sizeBytes: mp3Blob.size,
+          createdAt: new Date().toISOString(),
+          scriptPreview: script.slice(0, 120),
+          blob: mp3Blob
+        };
+
+        await dbPut('audios', record);
+        state.latestAudioRecord = record;
+
+        const audioUrl = URL.createObjectURL(mp3Blob);
+        document.getElementById('latestAudioPlayer').src = audioUrl;
+        document.getElementById('latestAudioHeading').textContent = `✅ ${fileName} (${formatDuration(stitchedBuffer.duration)}) तैयार और सेव!`;
+        document.getElementById('latestAudioBox').style.display = 'block';
+
+        progTitle.textContent = 'पूर्ण हुआ! MP3 डाउनलोड शुरू हो रही है...';
+        progPct.textContent = '100%';
+        progFill.style.width = '100%';
+
+        triggerDownload(mp3Blob, fileName);
+        await renderAudioLibrary();
+        showToast('🎉 पूरी ऑडियो एक सिंगल MP3 में बन गई और लाइब्रेरी में सेव हो गई!');
+      } catch (err) {
+        console.error(err);
+        progTitle.textContent = `❌ त्रुटि: ${err.message}`;
+        showToast(`ऑडियो जनरेशन रुका: ${err.message}`, true);
+      } finally {
+        state.isGeneratingTTS = false;
+        genBtn.disabled = false;
+        cancelBtn.style.display = 'none';
+      }
+    }
+
+    function cancelLongFormTTS() {
+      state.cancelRequested = true;
+      showToast('⏹️ प्रक्रिया रोकी जा रही है...');
+    }
+
+    function stitchAudioBuffers(buffers, gapMs = 150) {
+      const ctx = getAudioContext();
+      const targetRate = buffers[0].sampleRate || 44100;
+      const gapSamples = Math.floor((gapMs / 1000) * targetRate);
+
+      let totalLength = 0;
+      for (let i = 0; i < buffers.length; i++) {
+        totalLength += buffers[i].length;
+        if (i < buffers.length - 1) totalLength += gapSamples;
+      }
+
+      const out = ctx.createBuffer(1, totalLength, targetRate);
+      const outData = out.getChannelData(0);
+      let offset = 0;
+
+      for (let i = 0; i < buffers.length; i++) {
+        const ch0 = buffers[i].getChannelData(0);
+        outData.set(ch0, offset);
+        offset += ch0.length;
+        if (i < buffers.length - 1) {
+          offset += gapSamples;
+        }
+      }
+      return out;
+    }
+
+    async function encodeAudioBufferToMp3(audioBuffer) {
+      const sampleRate = audioBuffer.sampleRate;
+      const floatSamples = audioBuffer.getChannelData(0);
+      const int16Samples = new Int16Array(floatSamples.length);
+
+      for (let i = 0; i < floatSamples.length; i++) {
+        const s = Math.max(-1, Math.min(1, floatSamples[i]));
+        int16Samples[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+
+      if (window.lamejs && window.lamejs.Mp3Encoder) {
+        const mp3encoder = new window.lamejs.Mp3Encoder(1, sampleRate, 128);
+        const mp3Data = [];
+        const sampleBlockSize = 1152;
+
+        for (let i = 0; i < int16Samples.length; i += sampleBlockSize) {
+          const chunk = int16Samples.subarray(i, i + sampleBlockSize);
+          const mp3buf = mp3encoder.encodeBuffer(chunk);
+          if (mp3buf.length > 0) mp3Data.push(mp3buf);
+          if (i % (sampleBlockSize * 300) === 0) {
+            await new Promise(r => setTimeout(r, 0));
+          }
+        }
+        const endBuf = mp3encoder.flush();
+        if (endBuf.length > 0) mp3Data.push(endBuf);
+        return new Blob(mp3Data, { type: 'audio/mp3' });
+      }
+
+      return encodeWavFallback(int16Samples, sampleRate);
+    }
+
+    function encodeWavFallback(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+      const writeString = (offset, str) => {
+        for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
+      };
+      writeString(0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(8, 'WAVE');
+      writeString(12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeString(36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+      let offset = 44;
+      for (let i = 0; i < samples.length; i++, offset += 2) {
+        view.setInt16(offset, samples[i], true);
+      }
+      return new Blob([view], { type: 'audio/wav' });
+    }
+
+    function downloadLatestAudio() {
+      if (state.latestAudioRecord) {
+        triggerDownload(state.latestAudioRecord.blob, state.latestAudioRecord.title);
+      }
+    }
+
+    function openLatestInEditor() {
+      if (state.latestAudioRecord) {
+        switchTab('tab-library');
+        openAudioInEditor(state.latestAudioRecord.id);
+      }
+    }
+
+    // =========================================================================
+    // 6. PERMANENT MP3 LIBRARY & STUDIO WAVEFORM AUDIO EDITOR (100% OFFLINE)
+    // =========================================================================
+    async function renderAudioLibrary() {
+      const records = await dbGetAll('audios');
+      records.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      document.getElementById('libraryCount').textContent = records.length;
+      const totalBytes = records.reduce((sum, r) => sum + (r.sizeBytes || (r.blob ? r.blob.size : 0)), 0);
+      document.getElementById('totalStorageUsed').textContent = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB (${records.length} फ़ाइलें)`;
+
+      const listEl = document.getElementById('audioLibraryList');
+      if (records.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center; padding:22px; color:var(--text-muted); font-size:0.86rem; background:var(--bg-panel); border-radius:14px;">आपकी ऑडियो लाइब्रेरी अभी खाली है। जनरेट की गई MP3 फ़ाइलें और माइक रिकॉर्डिंग यहाँ स्थायी रूप से सेव रहेंगी।</div>`;
+        return;
+      }
+
+      listEl.innerHTML = records.map(r => {
+        const url = URL.createObjectURL(r.blob);
+        const sizeMb = ((r.sizeBytes || r.blob.size) / (1024 * 1024)).toFixed(2);
+        const dateStr = new Date(r.createdAt).toLocaleString('hi-IN', { dateStyle: 'short', timeStyle: 'short' });
+        return `
+          <div class="audio-card">
+            <div class="audio-card-top">
+              <div>
+                <div class="audio-title">🎵 ${escapeHtml(r.title)}</div>
+                <div class="audio-sub">🎙️ ${escapeHtml(r.voiceName || 'Audio')} • ⏱️ ${formatDuration(r.duration || 0)} • 📦 ${sizeMb} MB • ${dateStr}</div>
+              </div>
+            </div>
+            <audio controls src="${url}"></audio>
+            <div class="btn-row">
+              <button type="button" class="btn btn-teal btn-sm" onclick="openAudioInEditor('${r.id}')" style="flex:1;">✂️ Edit (एडिट)</button>
+              <button type="button" class="btn btn-primary btn-sm" onclick="downloadLibraryAudio('${r.id}')" style="flex:1;">⬇️ डाउनलोड</button>
+              <button type="button" class="btn btn-dark btn-sm" onclick="renameLibraryAudio('${r.id}')">✏️</button>
+              <button type="button" class="btn btn-danger btn-sm" onclick="deleteLibraryAudio('${r.id}')">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function importExternalFileToLibrary(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const ctx = getAudioContext();
+        const arr = await file.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(arr.slice(0));
+        const record = {
+          id: 'aud_' + Date.now(),
+          title: file.name,
+          voiceName: 'Imported Audio',
+          duration: decoded.duration,
+          sizeBytes: file.size,
+          createdAt: new Date().toISOString(),
+          blob: file
+        };
+        await dbPut('audios', record);
+        await renderAudioLibrary();
+        showToast('✅ ऑडियो फ़ाइल ऑफ़लाइन लाइब्रेरी में जुड़ गई!');
+      } catch (err) {
+        showToast('यह ऑडियो फ़ाइल पढ़ी नहीं जा सकी', true);
+      }
+      e.target.value = '';
+    }
+
+    async function downloadLibraryAudio(id) {
+      const records = await dbGetAll('audios');
+      const rec = records.find(r => r.id === id);
+      if (rec) triggerDownload(rec.blob, rec.title);
+    }
+
+    async function renameLibraryAudio(id) {
+      const records = await dbGetAll('audios');
+      const rec = records.find(r => r.id === id);
+      if (!rec) return;
+      const next = prompt('MP3 फ़ाइल का नया नाम लिखें:', rec.title);
+      if (next && next.trim()) {
+        rec.title = next.trim().endsWith('.mp3') ? next.trim() : next.trim() + '.mp3';
+        await dbPut('audios', rec);
+        await renderAudioLibrary();
+        showToast('✏️ फ़ाइल का नाम बदल दिया गया');
+      }
+    }
+
+    async function deleteLibraryAudio(id) {
+      if (!confirm('क्या आप इस MP3 फ़ाइल को स्थायी रूप से डिलीट करना चाहते हैं?')) return;
+      await dbDelete('audios', id);
+      await renderAudioLibrary();
+      showToast('🗑️ MP3 फ़ाइल डिलीट कर दी गई');
+    }
+
+    // --- STUDIO WAVEFORM EDITOR ---
+    async function openAudioInEditor(id) {
+      const records = await dbGetAll('audios');
+      const rec = records.find(r => r.id === id);
+      if (!rec) return;
+
+      showToast('🎛️ ऑडियो वेवफॉर्म लोड हो रहा है...');
+      try {
+        const ctx = getAudioContext();
+        const arr = await rec.blob.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(arr.slice(0));
+
+        state.editorSourceId = rec.id;
+        state.editorTitle = rec.title;
+        state.editorBuffer = decoded;
+        state.editorHistory = [];
+
+        document.getElementById('editorTrackTitle').textContent = `एडिटिंग: ${rec.title}`;
+        document.getElementById('trimStartSlider').value = 0;
+        document.getElementById('trimEndSlider').value = 100;
+        document.getElementById('gainSlider').value = 100;
+        document.getElementById('gainVal').textContent = '100%';
+        document.getElementById('speedSlider').value = 1.00;
+        document.getElementById('speedVal').textContent = '1.00x';
+        document.getElementById('eqPresetSelect').value = 'none';
+        document.getElementById('eqVal').textContent = 'Normal';
+        document.getElementById('fadeSlider').value = 0;
+        document.getElementById('fadeVal').textContent = '0.0s';
+        document.getElementById('editorUndoBtn').disabled = true;
+        document.getElementById('editorPreviewPlayer').style.display = 'none';
+
+        document.getElementById('audioEditorPanel').style.display = 'block';
+        document.getElementById('audioEditorPanel').scrollIntoView({ behavior: 'smooth' });
+        updateTrimSelection();
+      } catch (err) {
+        showToast('ऑडियो एडिटर में लोड नहीं हो सका', true);
+      }
+    }
+
+    function closeEditor() {
+      document.getElementById('audioEditorPanel').style.display = 'none';
+      state.editorBuffer = null;
+    }
+
+    function updateTrimSelection() {
+      if (!state.editorBuffer) return;
+      let startPct = parseInt(document.getElementById('trimStartSlider').value, 10);
+      let endPct = parseInt(document.getElementById('trimEndSlider').value, 10);
+      if (startPct >= endPct) {
+        startPct = Math.max(0, endPct - 2);
+        document.getElementById('trimStartSlider').value = startPct;
+      }
+      document.getElementById('trimStartLabel').textContent = startPct + '%';
+      document.getElementById('trimEndLabel').textContent = endPct + '%';
+
+      const dur = state.editorBuffer.duration;
+      const startSec = (startPct / 100) * dur;
+      const endSec = (endPct / 100) * dur;
+      document.getElementById('editorSelectionInfo').textContent = `चयन: ${startSec.toFixed(1)}s – ${endSec.toFixed(1)}s`;
+      document.getElementById('editorTotalDuration').textContent = `कुल अवधि: ${dur.toFixed(1)}s`;
+
+      drawWaveform(state.editorBuffer, startPct / 100, endPct / 100);
+    }
+
+    function drawWaveform(audioBuffer, startRatio = 0, endRatio = 1) {
+      const canvas = document.getElementById('waveformCanvas');
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
+      const data = audioBuffer.getChannelData(0);
+
+      ctx.fillStyle = '#070b15';
+      ctx.fillRect(0, 0, width, height);
+
+      const selX = startRatio * width;
+      const selW = (endRatio - startRatio) * width;
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.14)';
+      ctx.fillRect(selX, 0, selW, height);
+
+      const step = Math.ceil(data.length / width);
+      const amp = height / 2;
+
+      for (let i = 0; i < width; i++) {
+        let min = 1.0;
+        let max = -1.0;
+        for (let j = 0; j < step; j++) {
+          const datum = data[(i * step) + j];
+          if (datum < min) min = datum;
+          if (datum > max) max = datum;
+        }
+        const ratio = i / width;
+        ctx.fillStyle = (ratio >= startRatio && ratio <= endRatio) ? '#10b981' : '#334155';
+        ctx.fillRect(i, (1 + min) * amp, 1.5, Math.max(1, (max - min) * amp));
+      }
+
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(selX, 0);
+      ctx.lineTo(selX, height);
+      ctx.moveTo(selX + selW, 0);
+      ctx.lineTo(selX + selW, height);
+      ctx.stroke();
+    }
+
+    function pushEditorHistory() {
+      if (!state.editorBuffer) return;
+      state.editorHistory.push(state.editorBuffer);
+      if (state.editorHistory.length > 8) state.editorHistory.shift();
+      document.getElementById('editorUndoBtn').disabled = false;
+    }
+
+    function undoEditorChange() {
+      if (state.editorHistory.length === 0) return;
+      state.editorBuffer = state.editorHistory.pop();
+      document.getElementById('editorUndoBtn').disabled = state.editorHistory.length === 0;
+      document.getElementById('trimStartSlider').value = 0;
+      document.getElementById('trimEndSlider').value = 100;
+      updateTrimSelection();
+      showToast('↩️ पिछला बदलाव वापस आ गया');
+    }
+
+    function applyTrimKeep() {
+      if (!state.editorBuffer) return;
+      const startRatio = parseInt(document.getElementById('trimStartSlider').value, 10) / 100;
+      const endRatio = parseInt(document.getElementById('trimEndSlider').value, 10) / 100;
+      const src = state.editorBuffer;
+      const startSample = Math.floor(startRatio * src.length);
+      const endSample = Math.floor(endRatio * src.length);
+      const newLen = Math.max(100, endSample - startSample);
+
+      pushEditorHistory();
+      const ctx = getAudioContext();
+      const trimmed = ctx.createBuffer(1, newLen, src.sampleRate);
+      trimmed.getChannelData(0).set(src.getChannelData(0).subarray(startSample, endSample));
+      state.editorBuffer = trimmed;
+
+      document.getElementById('trimStartSlider').value = 0;
+      document.getElementById('trimEndSlider').value = 100;
+      updateTrimSelection();
+      showToast('✂️ चुना हुआ हिस्सा रखा गया!');
+    }
+
+    function applyCutDelete() {
+      if (!state.editorBuffer) return;
+      const startRatio = parseInt(document.getElementById('trimStartSlider').value, 10) / 100;
+      const endRatio = parseInt(document.getElementById('trimEndSlider').value, 10) / 100;
+      const src = state.editorBuffer;
+      const startSample = Math.floor(startRatio * src.length);
+      const endSample = Math.floor(endRatio * src.length);
+      const part1Len = startSample;
+      const part2Len = src.length - endSample;
+
+      if (part1Len + part2Len < 100) {
+        showToast('पूरा ऑडियो एक साथ नहीं काटा जा सकता', true);
+        return;
+      }
+
+      pushEditorHistory();
+      const ctx = getAudioContext();
+      const result = ctx.createBuffer(1, part1Len + part2Len, src.sampleRate);
+      const out = result.getChannelData(0);
+      const data = src.getChannelData(0);
+      out.set(data.subarray(0, startSample), 0);
+      out.set(data.subarray(endSample), part1Len);
+      state.editorBuffer = result;
+
+      document.getElementById('trimStartSlider').value = 0;
+      document.getElementById('trimEndSlider').value = 100;
+      updateTrimSelection();
+      showToast('🗑️ चुना हुआ हिस्सा काट दिया गया!');
+    }
+
+    async function appendExternalAudioToEditor(e) {
+      const file = e.target.files[0];
+      if (!file || !state.editorBuffer) return;
+      try {
+        const ctx = getAudioContext();
+        const arr = await file.arrayBuffer();
+        const extra = await ctx.decodeAudioData(arr.slice(0));
+        pushEditorHistory();
+        state.editorBuffer = stitchAudioBuffers([state.editorBuffer, extra], 200);
+        updateTrimSelection();
+        showToast('➕ नई ऑडियो क्लिप अंत में जुड़ गई!');
+      } catch (err) {
+        showToast('फ़ाइल जोड़ने में समस्या हुई', true);
+      }
+      e.target.value = '';
+    }
+
+    async function renderProcessedEditorBuffer() {
+      if (!state.editorBuffer) return null;
+      const src = state.editorBuffer;
+      const gainVal = parseInt(document.getElementById('gainSlider').value, 10) / 100;
+      const speedVal = parseFloat(document.getElementById('speedSlider').value) || 1.0;
+      const eqMode = document.getElementById('eqPresetSelect').value;
+      const fadeSec = parseFloat(document.getElementById('fadeSlider').value) || 0;
+
+      const outLength = Math.max(100, Math.floor(src.length / speedVal));
+      const offlineCtx = new OfflineAudioContext(1, outLength, src.sampleRate);
+
+      const sourceNode = offlineCtx.createBufferSource();
+      sourceNode.buffer = src;
+      sourceNode.playbackRate.value = speedVal;
+
+      let lastNode = sourceNode;
+
+      if (eqMode !== 'none') {
+        const lowFilter = offlineCtx.createBiquadFilter();
+        lowFilter.type = 'lowshelf';
+        lowFilter.frequency.value = 180;
+
+        const highFilter = offlineCtx.createBiquadFilter();
+        highFilter.type = 'highshelf';
+        highFilter.frequency.value = 3200;
+
+        if (eqMode === 'podcast') {
+          lowFilter.gain.value = 6;
+          highFilter.gain.value = 4;
+        } else if (eqMode === 'crisp') {
+          lowFilter.gain.value = -2;
+          highFilter.gain.value = 7;
+        } else if (eqMode === 'warm') {
+          lowFilter.gain.value = 5;
+          highFilter.gain.value = -3;
+        }
+
+        lastNode.connect(lowFilter);
+        lowFilter.connect(highFilter);
+        lastNode = highFilter;
+      }
+
+      const gainNode = offlineCtx.createGain();
+      const totalDur = outLength / src.sampleRate;
+      gainNode.gain.setValueAtTime(fadeSec > 0 ? 0.01 : gainVal, 0);
+      if (fadeSec > 0 && fadeSec * 2 < totalDur) {
+        gainNode.gain.linearRampToValueAtTime(gainVal, fadeSec);
+        gainNode.gain.setValueAtTime(gainVal, totalDur - fadeSec);
+        gainNode.gain.linearRampToValueAtTime(0.01, totalDur);
+      }
+
+      lastNode.connect(gainNode);
+      gainNode.connect(offlineCtx.destination);
+
+      sourceNode.start(0);
+      return await offlineCtx.startRendering();
+    }
+
+    async function previewEditedBuffer() {
+      showToast('▶️ एडिटेड ऑडियो तैयार हो रहा है...');
+      const rendered = await renderProcessedEditorBuffer();
+      if (!rendered) return;
+      const blob = await encodeAudioBufferToMp3(rendered);
+      const player = document.getElementById('editorPreviewPlayer');
+      player.src = URL.createObjectURL(blob);
+      player.style.display = 'block';
+      player.play();
+    }
+
+    async function saveEditedToLibrary(alsoDownload = true) {
+      showToast('💾 एडिटेड MP3 सेव हो रही है...');
+      const rendered = await renderProcessedEditorBuffer();
+      if (!rendered) return;
+      const mp3Blob = await encodeAudioBufferToMp3(rendered);
+      const baseName = state.editorTitle.replace(/\.(mp3|wav)$/i, '');
+      const newTitle = `${baseName}_edited.mp3`;
+
+      const record = {
+        id: 'aud_' + Date.now(),
+        title: newTitle,
+        voiceName: 'Edited Studio Audio',
+        duration: rendered.duration,
+        sizeBytes: mp3Blob.size,
+        createdAt: new Date().toISOString(),
+        blob: mp3Blob
+      };
+
+      await dbPut('audios', record);
+      await renderAudioLibrary();
+      if (alsoDownload) {
+        triggerDownload(mp3Blob, newTitle);
+      }
+      showToast(`✅ "${newTitle}" लाइब्रेरी में सेव और डाउनलोड हो गई!`);
+    }
+
+    // =========================================================================
+    // 7. UTILITIES
+    // =========================================================================
+    function triggerDownload(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 1500);
+    }
+
+    function formatDuration(sec) {
+      if (!sec || isNaN(sec)) return '0:00';
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${String(s).padStart(2, '0')}`;
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
