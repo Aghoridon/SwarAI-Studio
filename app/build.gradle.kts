@@ -6,6 +6,7 @@ plugins {
 android {
     namespace = "com.swarai.studio"
     compileSdk = 34
+    buildToolsVersion = "34.0.0"
 
     defaultConfig {
         applicationId = "com.swarai.studio"
