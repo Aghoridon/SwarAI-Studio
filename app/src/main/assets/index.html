@@ -2887,13 +2887,21 @@
 
     window.addEventListener('DOMContentLoaded', initApp);
   </script>
-</body>
-</html>
-
 <script>
 (function() {
-  if (window.__swaraiBridgeLoaded) return;
-  window.__swaraiBridgeLoaded = true;
+  var activeUtterance = null;
+  window.__onNativeTtsStart = function() {
+    if (activeUtterance && typeof activeUtterance.onstart === "function") {
+      try { activeUtterance.onstart({ type: "start", utterance: activeUtterance }); } catch (_) {}
+    }
+  };
+  window.__onNativeTtsDone = function() {
+    if (activeUtterance && typeof activeUtterance.onend === "function") {
+      var u = activeUtterance;
+      activeUtterance = null;
+      try { u.onend({ type: "end", utterance: u }); } catch (_) {}
+    }
+  };
   if (window.AndroidTTS && typeof window.AndroidTTS.speak === "function") {
     window.speechSynthesis = {
       speaking: false,
@@ -2906,6 +2914,7 @@
         ];
       },
       speak: function(utterance) {
+        activeUtterance = utterance || null;
         var txt = typeof utterance === "string" ? utterance : (utterance && utterance.text) || "";
         var rate = (utterance && typeof utterance.rate === "number") ? utterance.rate : 1.0;
         var pitch = (utterance && typeof utterance.pitch === "number") ? utterance.pitch : 1.0;
@@ -2913,6 +2922,7 @@
         window.AndroidTTS.speak(String(txt), rate, pitch, lang);
       },
       cancel: function() {
+        activeUtterance = null;
         window.AndroidTTS.stop();
       },
       pause: function() {
@@ -2923,3 +2933,6 @@
   }
 })();
 </script>
+</body>
+</body>
+</html>

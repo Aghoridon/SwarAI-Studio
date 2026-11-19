@@ -1,12 +1,16 @@
 package com.swarai.studio
 
 import android.annotation.SuppressLint
+import android.media.AudioAttributes
+import android.os.Build
 import android.os.Bundle
 import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
 import android.webkit.JavascriptInterface
 import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.util.Locale
 
@@ -22,7 +26,41 @@ class MainActivity : AppCompatActivity() {
         tts = TextToSpeech(this) { status ->
             if (status == TextToSpeech.SUCCESS) {
                 ttsReady = true
-                tts?.language = Locale("hi", "IN")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    val attrs = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                    tts?.setAudioAttributes(attrs)
+                }
+                val res = tts?.setLanguage(Locale("hi", "IN"))
+                if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    tts?.language = Locale.getDefault()
+                }
+                tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+                    override fun onStart(utteranceId: String?) {
+                        runOnUiThread {
+                            webView.evaluateJavascript("if(window.__onNativeTtsStart)window.__onNativeTtsStart();", null)
+                        }
+                    }
+
+                    override fun onDone(utteranceId: String?) {
+                        runOnUiThread {
+                            webView.evaluateJavascript("if(window.__onNativeTtsDone)window.__onNativeTtsDone();", null)
+                        }
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {
+                        runOnUiThread {
+                            webView.evaluateJavascript("if(window.__onNativeTtsDone)window.__onNativeTtsDone();", null)
+                        }
+                    }
+                })
+            } else {
+                runOnUiThread {
+                    Toast.makeText(this, "Android TTS इंजन शुरू नहीं हो सका", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -56,7 +94,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     engine.setSpeechRate(if (rate > 0.1f) rate else 1.0f)
                     engine.setPitch(if (pitch > 0.1f) pitch else 1.0f)
-                    engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    val uttId = "swarai_" + System.currentTimeMillis()
+                    val speakRes = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, uttId)
+                    if (speakRes == TextToSpeech.ERROR) {
+                        Toast.makeText(this@MainActivity, "TTS बोलने में त्रुटि आई", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, "TTS अभी तैयार हो रहा है, दोबारा दबाएं", Toast.LENGTH_SHORT).show()
                 }
             }
         }
