@@ -21,11 +21,11 @@ jobs:
 
       - name: Build Debug APK
         run: |
-          gradle wrapper --gradle-version 8.4 --no-daemon
+          gradle wrapper --gradle-version 8.4 --no-daemon || true
           chmod +x ./gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log || {
-            echo "=== LINES ABOVE ERROR ==="
-            grep -n -C 8 "DependencyHandler.module\|FAILURE:" gradle_out.log | tail -n 30
+            echo "=== FIRST FAILURE LINES ==="
+            grep -n -C 5 "e: \|FAILURE:\|DependencyHandler.module\|Could not" gradle_out.log | head -n 35
             exit 1
           }
 
