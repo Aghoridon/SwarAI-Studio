@@ -23,7 +23,11 @@ jobs:
         run: |
           gradle wrapper --gradle-version 8.4 --no-daemon
           chmod +x ./gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee gradle_out.log || {
+            echo "=== LINES ABOVE ERROR ==="
+            grep -n -C 8 "DependencyHandler.module\|FAILURE:" gradle_out.log | tail -n 30
+            exit 1
+          }
 
       - name: Rename APK for Easy Download
         run: |
