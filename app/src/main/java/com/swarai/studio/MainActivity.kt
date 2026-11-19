@@ -334,7 +334,6 @@ class MainActivity : AppCompatActivity() {
                 } catch (_: Exception) {}
             }
         }
-    }
 
     override fun onDestroy() {
         try {
