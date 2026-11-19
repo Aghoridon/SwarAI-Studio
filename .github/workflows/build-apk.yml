@@ -25,13 +25,9 @@ jobs:
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
         run: |
           echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
-          gradle assembleDebug --no-daemon 2>&1 | tee gradle_out.log
-          EXIT_CODE=${PIPESTATUS[0]}
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "=== TOP 75 LOG LINES ==="
-            head -n 75 gradle_out.log
-            exit "$EXIT_CODE"
-          fi
+          curl -sSL https://services.gradle.org/distributions/gradle-8.4-bin.zip -o gradle-8.4.zip
+          unzip -q gradle-8.4.zip
+          ./gradle-8.4/bin/gradle assembleDebug --no-daemon --stacktrace
 
       - name: Rename APK for Easy Download
         run: |
