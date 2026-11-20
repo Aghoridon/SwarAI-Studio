@@ -1,19 +1,18 @@
-package com.swarai.studio
 
-import android.media.AudioFormat
-import android.media.AudioTrack
-import com.k2fsa.sherpa.onnx.OfflineTts
-import com.k2fsa.sherpa.onnx.OfflineTtsConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
-import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
+package com.swarai.studio
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.AudioAttributes
+import android.media.AudioFormat
+import android.media.AudioTrack
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
@@ -25,6 +24,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.k2fsa.sherpa.onnx.OfflineTts
+import com.k2fsa.sherpa.onnx.OfflineTtsConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsModelConfig
+import com.k2fsa.sherpa.onnx.OfflineTtsVitsModelConfig
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
@@ -43,17 +46,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun ensureStoragePermission() {
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-            if (!android.os.Environment.isExternalStorageManager()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()) {
                 try {
-                    val intent = android.content.Intent(
-                        android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
-                        android.net.Uri.parse("package:" + packageName)
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                        Uri.parse("package:" + packageName)
                     )
                     startActivity(intent)
                 } catch (_: Exception) {
                     try {
-                        startActivity(android.content.Intent(android.provider.Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
+                        startActivity(Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION))
                     } catch (_: Exception) {}
                 }
             }
@@ -104,7 +107,10 @@ class MainActivity : AppCompatActivity() {
                         @Deprecated("Deprecated in Java")
                         override fun onError(utteranceId: String?) {}
                     })
-                    webView.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();var b=document.getElementById(\"swarai-onnx-scan-btn\");if(b){b.style.pointerEvents=\"auto\";b.onclick=function(e){if(e)e.preventDefault();if(typeof refreshOnnxList===\"function\")refreshOnnxList(true);else if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();};}", null)
+                    webView.evaluateJavascript(
+                        "if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();var b=document.getElementById(\"swarai-onnx-scan-btn\");if(b){b.style.pointerEvents=\"auto\";b.onclick=function(e){if(e)e.preventDefault();if(typeof refreshOnnxList===\"function\")refreshOnnxList(true);else if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();};}",
+                        null
+                    )
                 } else {
                     Toast.makeText(this, "TTS Init Failed: $status", Toast.LENGTH_LONG).show()
                 }
@@ -119,7 +125,10 @@ class MainActivity : AppCompatActivity() {
             webViewClient = object : WebViewClient() {
                 override fun onPageFinished(view: WebView?, url: String?) {
                     super.onPageFinished(view, url)
-                    view?.evaluateJavascript("if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();", null)
+                    view?.evaluateJavascript(
+                        "if(window.__swaraiRefreshVoices)window.__swaraiRefreshVoices();if(window.__swaraiRefreshOnnxModels)window.__swaraiRefreshOnnxModels();",
+                        null
+                    )
                 }
             }
             webChromeClient = WebChromeClient()
@@ -279,125 +288,9 @@ class MainActivity : AppCompatActivity() {
             return chosen
         }
 
-        @JavascriptInterface
-        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
-            val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
-            if (clean.isEmpty()) return
-        // SWARAI_ONNX_SPEAK_HOOK
-                val activeOnnx = selectedOnnxPath
-                if (!activeOnnx.isNullOrBlank()) {
-                    val onnxFile = File(activeOnnx)
-                    val modelDir = onnxFile.parentFile
-                    val tokensFile = if (modelDir != null) File(modelDir, "tokens.txt") else null
-                    val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
-                    if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
-                        val textToSpeak = clean
-                        val speedVal = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
-                        Thread {
-                            var playedOnnx = false
-                            var ttsObj: OfflineTts? = null
-                            try {
-                                val vitsCfg = OfflineTtsVitsModelConfig().apply {
-                                    model = onnxFile.absolutePath
-                                    tokens = tokensFile.absolutePath
-                                    if (espeakDir != null && espeakDir.exists()) {
-                                        try { dataDir = espeakDir.absolutePath } catch (_: Throwable) {}
-                                    }
-                                    noiseScale = 0.667f
-                                    noiseScaleW = 0.8f
-                                    lengthScale = 1.0f
-                                }
-                                val modelCfg = OfflineTtsModelConfig().apply {
-                                    vits = vitsCfg
-                                    numThreads = 2
-                                    debug = false
-                                }
-                                val ttsCfg = OfflineTtsConfig().apply { model = modelCfg }
-                                ttsObj = OfflineTts(assets, ttsCfg)
-                                val out = ttsObj.generate(textToSpeak, 0, speedVal)
-                                val samples = out.samples
-                                val sr = out.sampleRate
-                                if (samples != null && samples.isNotEmpty() && sr > 0) {
-                                    val pcm = ShortArray(samples.size) { i ->
-                                        (samples[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()
-                                    }
-                                    val track = AudioTrack.Builder()
-                                        .setAudioAttributes(
-                                            AudioAttributes.Builder()
-                                                .setUsage(AudioAttributes.USAGE_MEDIA)
-                                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                                .build()
-                                        )
-                                        .setAudioFormat(
-                                            AudioFormat.Builder()
-                                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                                                .setSampleRate(sr)
-                                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                                                .build()
-                                        )
-                                        .setBufferSizeInBytes(pcm.size * 2)
-                                        .setTransferMode(AudioTrack.MODE_STATIC)
-                                        .build()
-                                    track.write(pcm, 0, pcm.size)
-                                    track.play()
-                                    playedOnnx = true
-                                }
-                            } catch (t: Throwable) {
-                                val m = t.message ?: t.javaClass.simpleName
-                                runOnUiThread {
-                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
-                                } finally {
-                                try { ttsObj?.release() } catch (_: Throwable) {}
-                            }
-                            if (!playedOnnx) {
-                                runOnUiThread {
-                                    val eng = tts
-                                    if (eng != null && ttsReady) {
-                                        eng.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
-                                    }
-                                }
-                            }
-                        }.start()
-                    if (!onnxFile.exists()) {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
-                runOnUiThread {
-                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: अज्ञात त्रुटि", Toast.LENGTH_SHORT).show()
-                            } finally {
-                                try { ttsObj?.release() } catch (_: Throwable) {}
-                            }
-                            if (!playedOnnx) {
-                                runOnUiThread {
-                                    val eng = tts
-                                    if (eng != null && ttsReady) {
-                                        eng.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
-                                    }
-                                }
-                            }
-                        }.start()
-                runOnUiThread {
-                                    val engine = tts
-                                    if (engine != null && ttsReady) {
-                                        engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
-                                    }
-                                }.start()
-                    } else if (!onnxFile.exists()) {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
-                        }
-                runOnUiThread {
-                    val engine = tts
+        private fun speakWithSystemTts(cleanText: String, rate: Float, pitch: Float, lang: String) {
+            runOnUiThread {
+                val engine = tts
                 if (engine != null && ttsReady) {
                     val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
                     val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
@@ -419,38 +312,127 @@ class MainActivity : AppCompatActivity() {
                         if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
                             engine.language = Locale.getDefault()
                         }
+                    }
 
-                    val speakRes = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    val speakRes = engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
                     if (speakRes == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
+                    }
                 } else {
                     Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        @JavascriptInterface
+        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
+            val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
+            if (clean.isEmpty()) return
+
+            // SWARAI_ONNX_SPEAK_HOOK
+            val activeOnnx = selectedOnnxPath
+            if (!activeOnnx.isNullOrBlank()) {
+                val onnxFile = File(activeOnnx)
+                val modelDir = onnxFile.parentFile
+                val tokensFile = if (modelDir != null) File(modelDir, "tokens.txt") else null
+                val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
+
+                if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
+                    val textToSpeak = clean
+                    val speedVal = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
+                    Thread {
+                        var playedOnnx = false
+                        var ttsObj: OfflineTts? = null
+                        try {
+                            val vitsCfg = OfflineTtsVitsModelConfig().apply {
+                                model = onnxFile.absolutePath
+                                tokens = tokensFile.absolutePath
+                                if (espeakDir != null && espeakDir.exists()) {
+                                    try { dataDir = espeakDir.absolutePath } catch (_: Throwable) {}
+                                }
+                                noiseScale = 0.667f
+                                noiseScaleW = 0.8f
+                                lengthScale = 1.0f
+                            }
+                            val modelCfg = OfflineTtsModelConfig().apply {
+                                vits = vitsCfg
+                                numThreads = 2
+                                debug = false
+                            }
+                            val ttsCfg = OfflineTtsConfig().apply { model = modelCfg }
+                            ttsObj = OfflineTts(assets, ttsCfg)
+                            val out = ttsObj.generate(textToSpeak, 0, speedVal)
+                            val samples = out.samples
+                            val sr = out.sampleRate
+                            if (samples != null && samples.isNotEmpty() && sr > 0) {
+                                val pcm = ShortArray(samples.size) { i ->
+                                    (samples[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()
+                                }
+                                val track = AudioTrack.Builder()
+                                    .setAudioAttributes(
+                                        AudioAttributes.Builder()
+                                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                            .build()
+                                    )
+                                    .setAudioFormat(
+                                        AudioFormat.Builder()
+                                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                            .setSampleRate(sr)
+                                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                            .build()
+                                    )
+                                    .setBufferSizeInBytes(pcm.size * 2)
+                                    .setTransferMode(AudioTrack.MODE_STATIC)
+                                    .build()
+                                track.write(pcm, 0, pcm.size)
+                                track.play()
+                                playedOnnx = true
+                            }
+                        } catch (t: Throwable) {
+                            val m = t.message ?: t.javaClass.simpleName
+                            runOnUiThread {
+                                Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
+                            }
+                        } finally {
+                            try { ttsObj?.release() } catch (_: Throwable) {}
                         }
 
-        
+                        if (!playedOnnx) {
+                            speakWithSystemTts(textToSpeak, rate, pitch, lang)
+                        }
+                    }.start()
+                    return
+                } else if (!onnxFile.exists()) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
 
-@JavascriptInterface
+            speakWithSystemTts(clean, rate, pitch, lang)
+        }
+
+        @JavascriptInterface
         fun stop() {
             runOnUiThread {
                 try {
                     tts?.stop()
                 } catch (_: Exception) {}
+            }
+        }
+    }
 
-
-override fun onDestroy() {
+    override fun onDestroy() {
         try {
             tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
         super.onDestroy()
+    }
 }
 
-    }
-    }
-    }
-    }
-    }
-}
-}
-}
-}
