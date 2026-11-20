@@ -450,6 +450,3 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
-
-git add -A && git commit -m "Use streaming AudioTrack with min buffer check and safe cleanup for ONNX TTS" && git push origin main
-
