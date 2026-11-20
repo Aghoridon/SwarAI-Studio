@@ -357,8 +357,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                        }
-                        .start()
+                        }.start()
                     }
                     else if (!onnxFile.exists()) {
                         runOnUiThread {
@@ -383,8 +382,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                        }
-                        .start()
+                        }.start()
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
@@ -398,8 +396,7 @@ class MainActivity : AppCompatActivity() {
                                     if (engine != null && ttsReady) {
                                         engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
                                     }
-                                }
-                        .start()
+                                }.start()
                         return
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
