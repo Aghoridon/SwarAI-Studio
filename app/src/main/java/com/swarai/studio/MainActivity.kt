@@ -370,7 +370,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 runOnUiThread {
-                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: अज्ञात त्रुटि", Toast.LENGTH_SHORT).show()
                                 }
                             } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
