@@ -396,7 +396,6 @@ class MainActivity : AppCompatActivity() {
                                         engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
                                     }
                                 }.start()
-                        return
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
