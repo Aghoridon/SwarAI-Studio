@@ -1,6 +1,4 @@
-
 package com.swarai.studio
-
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -32,19 +30,16 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.util.Locale
-
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private var tts: TextToSpeech? = null
     private var ttsReady = false
     private var selectedVoiceName: String? = null
     private var selectedOnnxPath: String? = null
-
     private fun getModelsDir(): File {
         val base = Environment.getExternalStorageDirectory()
         return File(base, "SwarAI/models")
     }
-
     private fun ensureStoragePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
@@ -76,19 +71,16 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), 204)
         }
     }
-
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         ensureStoragePermission()
-
         try {
             val dir = getModelsDir()
             if (!dir.exists()) {
                 dir.mkdirs()
             }
         } catch (_: Exception) {}
-
         tts = TextToSpeech(this) { status ->
             runOnUiThread {
                 if (status == TextToSpeech.SUCCESS) {
@@ -116,7 +108,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         webView = WebView(this).apply {
             settings.javaScriptEnabled = true
             settings.domStorageEnabled = true
@@ -135,16 +126,13 @@ class MainActivity : AppCompatActivity() {
             addJavascriptInterface(AndroidTtsBridge(), "AndroidTTS")
             loadUrl("file:///android_asset/index.html")
         }
-
         setContentView(webView)
     }
-
     private fun pickMaleVoice(engine: TextToSpeech, langPrefix: String): Voice? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return null
         val voices = engine.voices?.filter { !it.isNetworkConnectionRequired } ?: return null
         val candidates = voices.filter { it.locale.language.equals(langPrefix, ignoreCase = true) }
             .ifEmpty { voices }
-
         return candidates.firstOrNull { v ->
             val n = v.name.lowercase(Locale.ROOT)
             n.contains("male") && !n.contains("female")
@@ -153,7 +141,6 @@ class MainActivity : AppCompatActivity() {
             n.contains("-m-") || n.endsWith("-m") || n.contains("man") || n.contains("deep")
         }
     }
-
     inner class AndroidTtsBridge {
         @JavascriptInterface
         fun getModelsFolderPath(): String {
@@ -163,7 +150,6 @@ class MainActivity : AppCompatActivity() {
                 "/storage/emulated/0/SwarAI/models"
             }
         }
-
         @JavascriptInterface
         fun getLocalOnnxModels(): String {
             val arr = JSONArray()
@@ -190,7 +176,6 @@ class MainActivity : AppCompatActivity() {
             } catch (_: Exception) {}
             return arr.toString()
         }
-
         @JavascriptInterface
         fun selectOnnxModel(path: String?): String {
             selectedOnnxPath = if (path.isNullOrBlank()) null else path.trim()
@@ -204,12 +189,10 @@ class MainActivity : AppCompatActivity() {
             }
             return selectedOnnxPath ?: ""
         }
-
         @JavascriptInterface
         fun getSelectedOnnxModel(): String {
             return selectedOnnxPath ?: ""
         }
-
         @JavascriptInterface
         fun getAvailableVoices(): String {
             val arr = JSONArray()
@@ -226,7 +209,6 @@ class MainActivity : AppCompatActivity() {
                                     else -> 2
                                 }
                             }.thenBy { it.name })
-
                         for (v in sorted) {
                             val obj = JSONObject()
                             obj.put("name", v.name)
@@ -251,7 +233,6 @@ class MainActivity : AppCompatActivity() {
             } catch (_: Exception) {}
             return arr.toString()
         }
-
         @JavascriptInterface
         fun setVoice(voiceName: String?) {
             selectedVoiceName = voiceName
@@ -267,7 +248,6 @@ class MainActivity : AppCompatActivity() {
                 } catch (_: Exception) {}
             }
         }
-
         @JavascriptInterface
         fun selectMaleVoice(lang: String = "hi-IN"): String {
             var chosen = ""
@@ -287,45 +267,6 @@ class MainActivity : AppCompatActivity() {
             }
             return chosen
         }
-
-        private fun speakWithSystemTts(cleanText: String, rate: Float, pitch: Float, lang: String) {
-            runOnUiThread {
-                val engine = tts
-                if (engine != null && ttsReady) {
-                    val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
-                    val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
-                    engine.setSpeechRate(r)
-                    engine.setPitch(p)
-
-                    var appliedVoice = false
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
-                        val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
-                        if (match != null) {
-                            engine.voice = match
-                            appliedVoice = true
-                        }
-                    }
-                    if (!appliedVoice) {
-                        val parts = lang.split("-", "_")
-                        val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
-                        val res = engine.setLanguage(loc)
-                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            engine.language = Locale.getDefault()
-                        }
-                    }
-
-                    val speakRes = engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
-                    if (speakRes == TextToSpeech.ERROR) {
-                        Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
-                    }
-                } else {
-                    Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        @JavascriptInterface
-        
     private val onnxAudioLock = Any()
     private var activeOnnxTrack: AudioTrack? = null
     private var cachedOnnxTts: OfflineTts? = null
@@ -442,11 +383,43 @@ class MainActivity : AppCompatActivity() {
             false
         }
     }
-
+        private fun speakWithSystemTts(cleanText: String, rate: Float, pitch: Float, lang: String) {
+            runOnUiThread {
+                val engine = tts
+                if (engine != null && ttsReady) {
+                    val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
+                    val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
+                    engine.setSpeechRate(r)
+                    engine.setPitch(p)
+                    var appliedVoice = false
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
+                        val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
+                        if (match != null) {
+                            engine.voice = match
+                            appliedVoice = true
+                        }
+                    }
+                    if (!appliedVoice) {
+                        val parts = lang.split("-", "_")
+                        val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
+                        val res = engine.setLanguage(loc)
+                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                            engine.language = Locale.getDefault()
+                        }
+                    }
+                    val speakRes = engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    if (speakRes == TextToSpeech.ERROR) {
+                        Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
+                    }
+                } else {
+                    Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        @JavascriptInterface
         fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
-
             // SWARAI_ONNX_SPEAK_HOOK (safe ONNX + AudioTrack with system TTS fallback)
             Thread {
                 val handled = trySpeakWithOnnx(clean, rate, pitch, lang)
@@ -458,7 +431,6 @@ class MainActivity : AppCompatActivity() {
             }.start()
             return
         }
-
         @JavascriptInterface
         fun stop() {
             runOnUiThread {
@@ -468,13 +440,12 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
     override fun onDestroy() {
         try {
-            tts?.stop()
+            stopOnnxAudioTrack(); tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
-        releaseOnnxEngine()
-            super.onDestroy()
+            releaseOnnxEngine()
+        super.onDestroy()
     }
 }
