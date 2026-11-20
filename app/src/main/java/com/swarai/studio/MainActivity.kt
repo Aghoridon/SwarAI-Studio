@@ -434,11 +434,12 @@ class MainActivity : AppCompatActivity() {
                             engine.language = Locale.getDefault()
                         }
 
-                    val res = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
-                    if (res == TextToSpeech.ERROR) {
+                    val speakRes = engine.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    if (speakRes == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
                 } else {
                     Toast.makeText(this@MainActivity, "TTS Not Ready Yet", Toast.LENGTH_SHORT).show()
+                        }
 
         
 
