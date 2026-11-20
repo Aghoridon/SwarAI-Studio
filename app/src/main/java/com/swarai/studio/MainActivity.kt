@@ -412,25 +412,26 @@ class MainActivity : AppCompatActivity() {
                 if (engine != null && ttsReady) {
                     val r = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
                     val p = if (pitch >= 0.4f && pitch <= 2.0f) pitch else 1.0f
-                    engine.setSpeechRate(r)
-                    engine.setPitch(p)
-
-                    var appliedVoice = false
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
-                        val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
-                        if (match != null) {
-                            engine.voice = match
-                            appliedVoice = true
-                        }
+            try { engine.setSpeechRate(r) } catch (_: Throwable) {}
+            try { engine.setPitch(p) } catch (_: Throwable) {}
+            try {
+                var appliedVoice = false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
+                    val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
+                    if (match != null) {
+                        engine.voice = match
+                        appliedVoice = true
                     }
-                    if (!appliedVoice) {
-                        val parts = lang.split("-", "_")
-                        val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
-                        val res = engine.setLanguage(loc)
-                        if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
-                            engine.language = Locale.getDefault()
-                        }
+                }
+                if (!appliedVoice) {
+                    val parts = lang.split("-", "_")
+                    val loc = if (parts.size >= 2) Locale(parts[0], parts[1]) else Locale(parts[0])
+                    val res = engine.setLanguage(loc)
+                    if (res == TextToSpeech.LANG_MISSING_DATA || res == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        engine.language = Locale.getDefault()
                     }
+                }
+            } catch (_: Throwable) {}
 
                     val speakRes = try { engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis()) } catch (_: Throwable) { TextToSpeech.ERROR }
                     if (speakRes == TextToSpeech.ERROR) {
