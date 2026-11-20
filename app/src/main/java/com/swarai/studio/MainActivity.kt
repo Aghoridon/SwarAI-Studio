@@ -359,7 +359,6 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }.start()
-                        return
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
@@ -371,7 +370,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 runOnUiThread {
-                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(this@MainActivity, "ONNX त्रुटि: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
                             } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
@@ -385,7 +384,6 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }.start()
-                        return
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
