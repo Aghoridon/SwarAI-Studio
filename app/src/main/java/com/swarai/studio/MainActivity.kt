@@ -382,14 +382,6 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }.start()
-                    } else if (!onnxFile.exists()) {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        runOnUiThread {
-                            Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
-                        }
                 runOnUiThread {
                                     val engine = tts
                                     if (engine != null && ttsReady) {
