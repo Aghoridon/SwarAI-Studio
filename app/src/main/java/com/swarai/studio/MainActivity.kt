@@ -336,10 +336,24 @@ class MainActivity : AppCompatActivity() {
                 val modelDir = onnxFile.parentFile
                 val tokensFile = if (modelDir != null) File(modelDir, "tokens.txt") else null
                 val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
+                val hasEspeak = espeakDir != null && espeakDir.exists() && espeakDir.isDirectory
 
-                if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
-                    val textToSpeak = clean.take(600)
-                    val speedVal = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
+                if (!onnxFile.exists() || !onnxFile.isFile || onnxFile.length() < 1024L) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "ONNX मॉडल फ़ाइल मान्य नहीं है, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                    }
+                } else if (tokensFile == null || !tokensFile.exists() || !tokensFile.isFile || tokensFile.length() < 10L) {
+                    runOnUiThread {
+                        Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला या खाली है, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    if (!hasEspeak) {
+                        runOnUiThread {
+                            Toast.makeText(this@MainActivity, "espeak-ng-data नहीं मिला — सुरक्षित ONNX प्रयास (फ़ॉलबैक सक्रिय)", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    val textToSpeak = clean.take(250)
+                    val speedVal = if (rate >= 0.5f && rate <= 2.0f) rate else 1.0f
                     Thread {
                         var playedOnnx = false
                         var ttsObj: OfflineTts? = null
@@ -348,8 +362,8 @@ class MainActivity : AppCompatActivity() {
                             val vitsCfg = OfflineTtsVitsModelConfig().apply {
                                 model = onnxFile.absolutePath
                                 tokens = tokensFile.absolutePath
-                                if (espeakDir != null && espeakDir.exists() && espeakDir.isDirectory) {
-                                    try { dataDir = espeakDir.absolutePath } catch (_: Throwable) {}
+                                if (hasEspeak) {
+                                    try { dataDir = espeakDir!!.absolutePath } catch (_: Throwable) {}
                                 }
                                 noiseScale = 0.667f
                                 noiseScaleW = 0.8f
@@ -357,7 +371,7 @@ class MainActivity : AppCompatActivity() {
                             }
                             val modelCfg = OfflineTtsModelConfig().apply {
                                 vits = vitsCfg
-                                numThreads = 2
+                                numThreads = 1
                                 debug = false
                             }
                             val ttsCfg = OfflineTtsConfig().apply { model = modelCfg }
@@ -365,7 +379,7 @@ class MainActivity : AppCompatActivity() {
                             val out = ttsObj.generate(textToSpeak, 0, speedVal)
                             val samples = out.samples
                             val sr = out.sampleRate
-                            if (samples != null && samples.isNotEmpty() && sr in 8000..96000) {
+                            if (samples != null && samples.isNotEmpty() && sr in 8000..48000) {
                                 val pcm = ShortArray(samples.size) { i ->
                                     (samples[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()
                                 }
@@ -375,37 +389,41 @@ class MainActivity : AppCompatActivity() {
                                     AudioFormat.CHANNEL_OUT_MONO,
                                     AudioFormat.ENCODING_PCM_16BIT
                                 )
-                                val bufBytes = if (minBuf > 0) maxOf(minBuf, pcmBytes) else pcmBytes
-                                track = AudioTrack.Builder()
-                                    .setAudioAttributes(
-                                        AudioAttributes.Builder()
-                                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                                            .build()
-                                    )
-                                    .setAudioFormat(
-                                        AudioFormat.Builder()
-                                            .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
-                                            .setSampleRate(sr)
-                                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
-                                            .build()
-                                    )
-                                    .setBufferSizeInBytes(bufBytes)
-                                    .setTransferMode(AudioTrack.MODE_STREAM)
-                                    .build()
-                                track.play()
-                                var offset = 0
-                                while (offset < pcm.size) {
-                                    val written = track.write(pcm, offset, pcm.size - offset)
-                                    if (written <= 0) break
-                                    offset += written
+                                if (minBuf > 0) {
+                                    val bufBytes = maxOf(minBuf, pcmBytes)
+                                    track = AudioTrack.Builder()
+                                        .setAudioAttributes(
+                                            AudioAttributes.Builder()
+                                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                                                .build()
+                                        )
+                                        .setAudioFormat(
+                                            AudioFormat.Builder()
+                                                .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                                .setSampleRate(sr)
+                                                .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                                                .build()
+                                        )
+                                        .setBufferSizeInBytes(bufBytes)
+                                        .setTransferMode(AudioTrack.MODE_STREAM)
+                                        .build()
+                                    if (track.state == AudioTrack.STATE_INITIALIZED) {
+                                        track.play()
+                                        var offset = 0
+                                        while (offset < pcm.size) {
+                                            val written = track.write(pcm, offset, pcm.size - offset)
+                                            if (written <= 0) break
+                                            offset += written
+                                        }
+                                        playedOnnx = offset > 0
+                                    }
                                 }
-                                playedOnnx = offset > 0
                             }
                         } catch (t: Throwable) {
                             val m = t.message ?: t.javaClass.simpleName
                             runOnUiThread {
-                                Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(this@MainActivity, "ONNX त्रुटि ($m), सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
                             }
                         } finally {
                             try { track?.stop() } catch (_: Throwable) {}
@@ -418,17 +436,8 @@ class MainActivity : AppCompatActivity() {
                         }
                     }.start()
                     return
-                } else if (!onnxFile.exists()) {
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    runOnUiThread {
-                        Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
-                    }
                 }
             }
-
             speakWithSystemTts(clean, rate, pitch, lang)
         }
 
