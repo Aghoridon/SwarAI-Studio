@@ -338,16 +338,17 @@ class MainActivity : AppCompatActivity() {
                 val espeakDir = if (modelDir != null) File(modelDir, "espeak-ng-data") else null
 
                 if (onnxFile.exists() && tokensFile != null && tokensFile.exists()) {
-                    val textToSpeak = clean
+                    val textToSpeak = clean.take(600)
                     val speedVal = if (rate >= 0.4f && rate <= 2.5f) rate else 1.0f
                     Thread {
                         var playedOnnx = false
                         var ttsObj: OfflineTts? = null
+                        var track: AudioTrack? = null
                         try {
                             val vitsCfg = OfflineTtsVitsModelConfig().apply {
                                 model = onnxFile.absolutePath
                                 tokens = tokensFile.absolutePath
-                                if (espeakDir != null && espeakDir.exists()) {
+                                if (espeakDir != null && espeakDir.exists() && espeakDir.isDirectory) {
                                     try { dataDir = espeakDir.absolutePath } catch (_: Throwable) {}
                                 }
                                 noiseScale = 0.667f
@@ -364,11 +365,18 @@ class MainActivity : AppCompatActivity() {
                             val out = ttsObj.generate(textToSpeak, 0, speedVal)
                             val samples = out.samples
                             val sr = out.sampleRate
-                            if (samples != null && samples.isNotEmpty() && sr > 0) {
+                            if (samples != null && samples.isNotEmpty() && sr in 8000..96000) {
                                 val pcm = ShortArray(samples.size) { i ->
                                     (samples[i].coerceIn(-1.0f, 1.0f) * Short.MAX_VALUE).toInt().toShort()
                                 }
-                                val track = AudioTrack.Builder()
+                                val pcmBytes = pcm.size * 2
+                                val minBuf = AudioTrack.getMinBufferSize(
+                                    sr,
+                                    AudioFormat.CHANNEL_OUT_MONO,
+                                    AudioFormat.ENCODING_PCM_16BIT
+                                )
+                                val bufBytes = if (minBuf > 0) maxOf(minBuf, pcmBytes) else pcmBytes
+                                track = AudioTrack.Builder()
                                     .setAudioAttributes(
                                         AudioAttributes.Builder()
                                             .setUsage(AudioAttributes.USAGE_MEDIA)
@@ -382,12 +390,17 @@ class MainActivity : AppCompatActivity() {
                                             .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                                             .build()
                                     )
-                                    .setBufferSizeInBytes(pcm.size * 2)
-                                    .setTransferMode(AudioTrack.MODE_STATIC)
+                                    .setBufferSizeInBytes(bufBytes)
+                                    .setTransferMode(AudioTrack.MODE_STREAM)
                                     .build()
-                                track.write(pcm, 0, pcm.size)
                                 track.play()
-                                playedOnnx = true
+                                var offset = 0
+                                while (offset < pcm.size) {
+                                    val written = track.write(pcm, offset, pcm.size - offset)
+                                    if (written <= 0) break
+                                    offset += written
+                                }
+                                playedOnnx = offset > 0
                             }
                         } catch (t: Throwable) {
                             val m = t.message ?: t.javaClass.simpleName
@@ -395,6 +408,8 @@ class MainActivity : AppCompatActivity() {
                                 Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
                             }
                         } finally {
+                            try { track?.stop() } catch (_: Throwable) {}
+                            try { track?.release() } catch (_: Throwable) {}
                             try { ttsObj?.release() } catch (_: Throwable) {}
                         }
 
@@ -435,4 +450,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 }
+
+git add -A && git commit -m "Use streaming AudioTrack with min buffer check and safe cleanup for ONNX TTS" && git push origin main
 
