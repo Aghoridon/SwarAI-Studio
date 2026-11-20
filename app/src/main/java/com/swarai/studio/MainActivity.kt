@@ -329,19 +329,7 @@ class MainActivity : AppCompatActivity() {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
 
-            // SWARAI_ONNX_SPEAK_HOOK
-            val activeOnnx = selectedOnnxPath
-            if (!activeOnnx.isNullOrBlank()) {
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "ONNX Safe-Skip सक्रिय: नेटिव TTS चल रहा है",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                speakWithSystemTts(clean.take(250), rate, pitch, lang)
-                return
-            }
+            // SWARAI_ONNX_SPEAK_HOOK (standard AAR active)
             speakWithSystemTts(clean, rate, pitch, lang)
         }
 
