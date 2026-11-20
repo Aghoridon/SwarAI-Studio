@@ -346,7 +346,7 @@ class MainActivity : AppCompatActivity() {
                                 val m = t.message ?: t.javaClass.simpleName
                                 runOnUiThread {
                                     Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
-                                } } finally {
+                                } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
                             }
                             if (!playedOnnx) {
