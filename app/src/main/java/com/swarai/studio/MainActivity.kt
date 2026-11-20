@@ -346,7 +346,6 @@ class MainActivity : AppCompatActivity() {
                                 val m = t.message ?: t.javaClass.simpleName
                                 runOnUiThread {
                                     Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
-                                }
                             } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
                             }
@@ -371,7 +370,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 runOnUiThread {
                                     Toast.makeText(this@MainActivity, "ONNX त्रुटि: अज्ञात त्रुटि", Toast.LENGTH_SHORT).show()
-                                }
                             } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
                             }
