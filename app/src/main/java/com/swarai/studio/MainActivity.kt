@@ -325,19 +325,145 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        
+    private val onnxAudioLock = Any()
+    private var activeOnnxTrack: AudioTrack? = null
+    private var cachedOnnxTts: OfflineTts? = null
+    private var cachedOnnxKey: String = ""
+
+    private fun stopOnnxAudioTrack() {
+        synchronized(onnxAudioLock) {
+            try {
+                activeOnnxTrack?.pause()
+                activeOnnxTrack?.flush()
+                activeOnnxTrack?.stop()
+                activeOnnxTrack?.release()
+            } catch (_: Throwable) {}
+            activeOnnxTrack = null
+        }
+    }
+
+    private fun releaseOnnxEngine() {
+        stopOnnxAudioTrack()
+        synchronized(onnxAudioLock) {
+            try {
+                cachedOnnxTts?.release()
+            } catch (_: Throwable) {}
+            cachedOnnxTts = null
+            cachedOnnxKey = ""
+        }
+    }
+
+    private fun trySpeakWithOnnx(text: String, rate: Float, pitch: Float, lang: String): Boolean {
+        return try {
+            val modelsDir = File(Environment.getExternalStorageDirectory(), "SwarAI/models")
+            if (!modelsDir.exists() || !modelsDir.isDirectory) return false
+
+            val onnxFile = modelsDir.listFiles()?.firstOrNull {
+                it.isFile && it.extension.equals("onnx", ignoreCase = true)
+            } ?: return false
+
+            val tokensFile = File(modelsDir, "tokens.txt")
+            if (!tokensFile.exists() || !tokensFile.isFile) return false
+
+            val espeakDir = File(modelsDir, "espeak-ng-data")
+            val key = "${onnxFile.absolutePath}|${tokensFile.absolutePath}|${espeakDir.absolutePath}"
+
+            val ttsEngine = synchronized(onnxAudioLock) {
+                if (cachedOnnxTts != null && cachedOnnxKey == key) {
+                    cachedOnnxTts
+                } else {
+                    try { cachedOnnxTts?.release() } catch (_: Throwable) {}
+                    cachedOnnxTts = null
+                    val vitsCfg = OfflineTtsVitsModelConfig().apply {
+                        model = onnxFile.absolutePath
+                        tokens = tokensFile.absolutePath
+                        dataDir = if (espeakDir.exists() && espeakDir.isDirectory) espeakDir.absolutePath else ""
+                    }
+                    val modelCfg = OfflineTtsModelConfig().apply {
+                        vits = vitsCfg
+                        numThreads = 2
+                        debug = false
+                        provider = "cpu"
+                    }
+                    val ttsCfg = OfflineTtsConfig().apply {
+                        model = modelCfg
+                    }
+                    val created = OfflineTts(assets, ttsCfg)
+                    cachedOnnxTts = created
+                    cachedOnnxKey = key
+                    created
+                }
+            } ?: return false
+
+            val speed = rate.coerceIn(0.5f, 2.0f)
+            val generated = ttsEngine.generate(text = text, sid = 0, speed = speed)
+            val samples = generated.samples
+            val sampleRate = generated.sampleRate
+            if (samples.isEmpty() || sampleRate <= 0) return false
+
+            val pcm = ShortArray(samples.size) { idx ->
+                val v = (samples[idx] * 32767.0f).toInt()
+                v.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+            }
+
+            stopOnnxAudioTrack()
+            val minBuf = AudioTrack.getMinBufferSize(
+                sampleRate,
+                AudioFormat.CHANNEL_OUT_MONO,
+                AudioFormat.ENCODING_PCM_16BIT
+            )
+            val bufSize = maxOf(minBuf, pcm.size * 2)
+            val track = AudioTrack.Builder()
+                .setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_MEDIA)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                        .build()
+                )
+                .setAudioFormat(
+                    AudioFormat.Builder()
+                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                        .setSampleRate(sampleRate)
+                        .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                        .build()
+                )
+                .setBufferSizeInBytes(bufSize)
+                .setTransferMode(AudioTrack.MODE_STREAM)
+                .build()
+
+            synchronized(onnxAudioLock) {
+                activeOnnxTrack = track
+            }
+            track.play()
+            track.write(pcm, 0, pcm.size, AudioTrack.WRITE_BLOCKING)
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
+
         fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
 
-            // SWARAI_ONNX_SPEAK_HOOK (standard AAR active)
-            speakWithSystemTts(clean, rate, pitch, lang)
+            // SWARAI_ONNX_SPEAK_HOOK (safe ONNX + AudioTrack with system TTS fallback)
+            Thread {
+                val handled = trySpeakWithOnnx(clean, rate, pitch, lang)
+                if (!handled) {
+                    runOnUiThread {
+                        speakWithSystemTts(clean, rate, pitch, lang)
+                    }
+                }
+            }.start()
+            return
         }
 
         @JavascriptInterface
         fun stop() {
             runOnUiThread {
                 try {
-                    tts?.stop()
+                    stopOnnxAudioTrack(); tts?.stop()
                 } catch (_: Exception) {}
             }
         }
@@ -348,6 +474,7 @@ class MainActivity : AppCompatActivity() {
             tts?.stop()
             tts?.shutdown()
         } catch (_: Exception) {}
-        super.onDestroy()
+        releaseOnnxEngine()
+            super.onDestroy()
     }
 }
