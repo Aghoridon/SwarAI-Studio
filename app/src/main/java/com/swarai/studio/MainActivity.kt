@@ -344,9 +344,9 @@ class MainActivity : AppCompatActivity() {
                                 }
                             } catch (t: Throwable) {
                                 val m = t.message ?: t.javaClass.simpleName
-                                runOnUiThread {
+                                runOnUiThread { catch (_: Throwable) {
                                     Toast.makeText(this@MainActivity, "ONNX त्रुटि: $m", Toast.LENGTH_SHORT).show()
-                            } finally {
+                                } } finally {
                                 try { ttsObj?.release() } catch (_: Throwable) {}
                             }
                             if (!playedOnnx) {
@@ -358,7 +358,6 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }.start()
-                    }
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "ONNX फ़ाइल नहीं मिली, सिस्टम TTS चल रहा है", Toast.LENGTH_SHORT).show()
