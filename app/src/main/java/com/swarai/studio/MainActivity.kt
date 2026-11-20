@@ -432,7 +432,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-                    val speakRes = engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis())
+                    val speakRes = try { engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis()) } catch (_: Throwable) { TextToSpeech.ERROR }
                     if (speakRes == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
                     }
@@ -447,16 +447,24 @@ class MainActivity : AppCompatActivity() {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
 
-            // SWARAI_ONNX_SPEAK_HOOK (safe ONNX + AudioTrack with system TTS fallback)
-            Thread {
-                val handled = trySpeakWithOnnx(clean, rate, pitch, lang)
-                if (!handled) {
-                    runOnUiThread {
-                        speakWithSystemTts(clean, rate, pitch, lang)
-                    }
-                }
-            }.start()
-            return
+            // SWARAI_ONNX_SPEAK_HOOK (serialized worker with safe ONNX + system TTS fallback)
+                Thread {
+                    try {
+                        val handled = try {
+                            trySpeakWithOnnx(clean, rate, pitch, lang)
+                        } catch (_: Throwable) {
+                            false
+                        }
+                        if (!handled) {
+                            runOnUiThread {
+                                try {
+                                    speakWithSystemTts(clean, rate, pitch, lang)
+                                } catch (_: Throwable) {}
+                            }
+                        }
+                    } catch (_: Throwable) {}
+                }.start()
+                return
         }
 
         @JavascriptInterface
