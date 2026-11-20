@@ -394,16 +394,13 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                }
                 runOnUiThread {
                                     val engine = tts
                                     if (engine != null && ttsReady) {
                                         engine.speak(textToSpeak, TextToSpeech.QUEUE_FLUSH, null, "swarai_fb")
                                     }
                                 }
-                            }
-                        }.start()
+                        .start()
                         return
                     } else if (!onnxFile.exists()) {
                         runOnUiThread {
@@ -413,8 +410,6 @@ class MainActivity : AppCompatActivity() {
                         runOnUiThread {
                             Toast.makeText(this@MainActivity, "tokens.txt नहीं मिला (सिस्टम TTS फ़ॉलबैक)", Toast.LENGTH_SHORT).show()
                         }
-                    }
-                }
                 runOnUiThread {
                     val engine = tts
                 if (engine != null && ttsReady) {
@@ -464,3 +459,4 @@ override fun onDestroy() {
 }
 
     }
+}}}}}}
