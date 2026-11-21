@@ -317,8 +317,7 @@ class MainActivity : AppCompatActivity() {
             return chosen
         }
 
-            private fun // TEMP_BYPASS_ONNX_FOR_ISOLATION
-                        if (false) trySpeakWithOnnx(text: String, rate: Float, pitch: Float, lang: String): Boolean {
+            private fun trySpeakWithOnnx(text: String, rate: Float, pitch: Float, lang: String): Boolean {
         return try {
             val modelsDir = File(Environment.getExternalStorageDirectory(), "SwarAI/models")
             if (!modelsDir.exists() || !modelsDir.isDirectory) return false
