@@ -425,8 +425,12 @@ class MainActivity : AppCompatActivity() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && !selectedVoiceName.isNullOrBlank()) {
                     val match = engine.voices?.firstOrNull { it.name == selectedVoiceName }
                     if (match != null) {
-                        engine.voice = match
-                        appliedVoice = true
+                        try {
+                            engine.voice = match
+                            appliedVoice = true
+                        } catch (_: Throwable) {
+                            appliedVoice = false
+                        }
                     }
                 }
                 if (!appliedVoice) {
@@ -439,7 +443,11 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (_: Throwable) {}
 
-                    val speakRes = try { engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis()) } catch (_: Throwable) { TextToSpeech.ERROR }
+                    val speakRes = try {
+                        if (cleanText.isNotEmpty()) engine.speak(cleanText, TextToSpeech.QUEUE_FLUSH, null, "swarai_" + System.currentTimeMillis()) else TextToSpeech.ERROR
+                    } catch (_: Throwable) {
+                        TextToSpeech.ERROR
+                    }
                     if (speakRes == TextToSpeech.ERROR) {
                         Toast.makeText(this@MainActivity, "TTS Speak Error", Toast.LENGTH_LONG).show()
                     }
