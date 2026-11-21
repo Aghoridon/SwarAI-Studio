@@ -482,7 +482,7 @@ class MainActivity : AppCompatActivity() {
             }
         }.start()
     }
-    override fun onDestroy() {
+    override override fun super.onDestroy() {
         try {
             tts?.stop()
             tts?.shutdown()
