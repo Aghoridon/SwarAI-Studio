@@ -464,7 +464,9 @@ class MainActivity : AppCompatActivity() {
 
             try { stopOnnxAudioTrack() } catch (_: Throwable) {}
             // SWARAI_ONNX_SPEAK_HOOK (serialized worker with safe ONNX + system TTS fallback)
-                Thread {
+                // TEMP_SAFE_SPEAK_PROBE
+                runOnUiThread { try { Toast.makeText(this@MainActivity, "Speak Triggered", Toast.LENGTH_SHORT).show() } catch (_: Throwable) {} }
+                if (false) 
                     try {
                         val handled = try {
                             trySpeakWithOnnx(clean, rate, pitch, lang)
