@@ -360,10 +360,14 @@ class MainActivity : AppCompatActivity() {
             } ?: return false
 
             val speed = rate.coerceIn(0.5f, 2.0f)
-            val generated = ttsEngine.generate(text = text, sid = 0, speed = speed)
+            val generated = try {
+                ttsEngine.generate(text = text, sid = 0, speed = speed)
+            } catch (_: Throwable) {
+                return false
+            }
             val samples = generated.samples
             val sampleRate = generated.sampleRate
-            if (samples.isEmpty() || sampleRate <= 0) return false
+            if (samples.isEmpty() || sampleRate !in 8000..48000) return false
 
             val pcm = ShortArray(samples.size) { idx ->
                 val v = (samples[idx] * 32767.0f).toInt()
@@ -371,11 +375,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             stopOnnxAudioTrack()
+            if (pcm.isEmpty()) return false
             val minBuf = AudioTrack.getMinBufferSize(
                 sampleRate,
                 AudioFormat.CHANNEL_OUT_MONO,
                 AudioFormat.ENCODING_PCM_16BIT
             )
+            if (minBuf <= 0) return false
             val bufSize = maxOf(minBuf, pcm.size * 2)
             val track = AudioTrack.Builder()
                 .setAudioAttributes(
