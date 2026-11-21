@@ -459,7 +459,7 @@ class MainActivity : AppCompatActivity() {
 
         @JavascriptInterface
     fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
-        val clean = text.replace(Regex("\[[^\]]*\]"), " ").trim()
+        val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
         if (clean.isEmpty()) return
         android.util.Log.d("SWARAI_TTS", "speak start lang=" + lang)
         try { stopOnnxAudioTrack() } catch (t: Throwable) { android.util.Log.e("SWARAI_TTS", "stopOnnx err", t) }
@@ -492,4 +492,5 @@ class MainActivity : AppCompatActivity() {
     }
 
 
+}
 }
