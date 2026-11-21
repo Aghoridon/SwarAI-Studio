@@ -458,39 +458,30 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
-        fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
-            val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
-            if (clean.isEmpty()) return
-
-            try { stopOnnxAudioTrack() } catch (_: Throwable) {}
-            // SWARAI_ONNX_SPEAK_HOOK (serialized worker with safe ONNX + system TTS fallback)
-                    try {
-                        val handled = try {
-                            trySpeakWithOnnx(clean, rate, pitch, lang)
-                        } catch (_: Throwable) {
-                            false
-                        }
-                        if (!handled) {
-                            runOnUiThread {
-                                try {
-                                    speakWithSystemTts(clean, rate, pitch, lang)
-                                } catch (_: Throwable) {}
-                            }
-                        }
-                    } catch (_: Throwable) {}
-                return
-        }
-
-        @JavascriptInterface
-        fun stop() {
-            runOnUiThread {
-                try {
-                    stopOnnxAudioTrack(); tts?.stop()
-                } catch (_: Exception) {}
+    fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
+        val clean = text.replace(Regex("\[[^\]]*\]"), " ").trim()
+        if (clean.isEmpty()) return
+        android.util.Log.d("SWARAI_TTS", "speak start lang=" + lang)
+        try { stopOnnxAudioTrack() } catch (t: Throwable) { android.util.Log.e("SWARAI_TTS", "stopOnnx err", t) }
+        Thread {
+            var handled = false
+            try {
+                handled = trySpeakWithOnnx(clean, rate, pitch, lang)
+            } catch (t: Throwable) {
+                android.util.Log.e("SWARAI_TTS", "onnx err", t)
+                handled = false
             }
-        }
+            if (!handled) {
+                runOnUiThread {
+                    try {
+                        speakWithSystemTts(clean, rate, pitch, lang)
+                    } catch (t: Throwable) {
+                        android.util.Log.e("SWARAI_TTS", "sys tts err", t)
+                    }
+                }
+            }
+        }.start()
     }
-
     override fun onDestroy() {
         try {
             tts?.stop()
