@@ -454,6 +454,7 @@ class MainActivity : AppCompatActivity() {
             val clean = text.replace(Regex("\\[[^\\]]*\\]"), " ").trim()
             if (clean.isEmpty()) return
 
+            try { stopOnnxAudioTrack() } catch (_: Throwable) {}
             // SWARAI_ONNX_SPEAK_HOOK (serialized worker with safe ONNX + system TTS fallback)
                 Thread {
                     try {
