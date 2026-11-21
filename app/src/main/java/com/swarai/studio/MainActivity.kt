@@ -478,7 +478,6 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
                     } catch (_: Throwable) {}
-                }.start()
                 return
         }
 
