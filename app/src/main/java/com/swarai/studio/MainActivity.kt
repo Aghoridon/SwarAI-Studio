@@ -318,6 +318,7 @@ class MainActivity : AppCompatActivity() {
         }
 
             private fun trySpeakWithOnnx(text: String, rate: Float, pitch: Float, lang: String): Boolean {
+        return false // temp diagnostic bypass for crash isolation
         return try {
             val modelsDir = File(Environment.getExternalStorageDirectory(), "SwarAI/models")
             if (!modelsDir.exists() || !modelsDir.isDirectory) return false
