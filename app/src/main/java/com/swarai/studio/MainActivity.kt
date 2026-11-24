@@ -481,6 +481,8 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
     override fun onDestroy() {
         try {
             tts?.stop()
@@ -491,6 +493,5 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-}
 }
 }
