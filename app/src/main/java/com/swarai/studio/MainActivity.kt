@@ -460,8 +460,7 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
     fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
         try {
-            val clean = text.replace(Regex("\[[^\]]*\]"), " ").trim()
-            if (clean.isEmpty()) return
+            val clean = text.replace(Regex("""\[[^\]]*\]""") return
             android.util.Log.d("SWARAI_TTS", "speak invoked lang=" + lang)
             try {
                 stopOnnxAudioTrack()
@@ -489,8 +488,7 @@ class MainActivity : AppCompatActivity() {
         } catch (t: Throwable) {
             android.util.Log.e("SWARAI_TTS", "outer speak failed", t)
         }
-    }
-    override fun onDestroy() {
+    override override fun onDestroy() {
         try {
             tts?.stop()
             tts?.shutdown()
@@ -498,6 +496,8 @@ class MainActivity : AppCompatActivity() {
         releaseOnnxEngine()
             super.onDestroy()
     }
+}
 
 
+}
 }
