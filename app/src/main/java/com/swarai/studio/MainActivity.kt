@@ -491,6 +491,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+}
     override fun onDestroy() {
         try {
             tts?.stop()
@@ -504,4 +505,3 @@ class MainActivity : AppCompatActivity() {
 }
 
 
-}
