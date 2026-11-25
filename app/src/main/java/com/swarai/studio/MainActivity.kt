@@ -460,7 +460,7 @@ class MainActivity : AppCompatActivity() {
     @JavascriptInterface
     fun speak(text: String, rate: Float = 1.0f, pitch: Float = 1.0f, lang: String = "hi-IN") {
         try {
-            val clean = text.replace(Regex("\[[^\]]*\]"), " ").trim()
+            val clean = text.replace(Regex("""\[[^\]]*\]"""), " ").trim()
             if (clean.isEmpty()) return
             android.util.Log.d("SWARAI_TTS", "speak invoked lang=" + lang)
             try {
